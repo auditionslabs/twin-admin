@@ -1,0 +1,113 @@
+# Twin Admin - Multi-Tenant Control Platform
+# For SurgiTwin Pro and GlowMorph Studio
+
+services:
+  # ---------------------------------------------------------------------------
+  # Admin API
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    container_name: twin-admin-api
+    ports:
+      - "3100:3100"
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/twin_admin
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - LICENSE_SECRET=${LICENSE_SECRET}
+      - SURGITWIN_API_URL=${SURGITWIN_API_URL:-}
+      - GLOWMORPH_API_URL=${GLOWMORPH_API_URL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - twin-admin
+
+  # ---------------------------------------------------------------------------
+  # Admin Dashboard (Next.js)
+  # ---------------------------------------------------------------------------
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    container_name: twin-admin-dashboard
+    ports:
+      - "3101:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:3100
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3101}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+    depends_on:
+      - api
+    networks:
+      - twin-admin
+
+  # ---------------------------------------------------------------------------
+  # Usage Aggregator (Background job - snapshots, quota updates)
+  # ---------------------------------------------------------------------------
+  usage-worker:
+    build:
+      context: .
+      dockerfile: services/usage-worker/Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/twin_admin
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - twin-admin
+
+  # ---------------------------------------------------------------------------
+  # Stripe Webhook Handler (optional - can run in API)
+  # ---------------------------------------------------------------------------
+  # stripe-webhook:
+  #   build: ...
+  #   environment: ...
+
+  # ---------------------------------------------------------------------------
+  # Data Layer
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: twin-admin-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: twin_admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/schema:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - twin-admin
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - twin-admin
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  twin-admin:
+    driver: bridge
