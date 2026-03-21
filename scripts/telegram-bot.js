@@ -88,11 +88,17 @@ async function callScenarioImage(imageBase64, scenarioId, customPrompt) {
   return d;
 }
 
-async function callImg2vid(imageBase64, scenarioId, prompt) {
+async function callImg2vid(imageBase64, opts = {}) {
+  const { scenarioId, templateId, prompt } = opts;
   const r = await fetch(`${BASE_URL}/api/demo/img2vid`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image: imageBase64, scenarioId: scenarioId || undefined, prompt: prompt || undefined })
+    body: JSON.stringify({
+      image: imageBase64,
+      scenarioId: scenarioId || undefined,
+      templateId: templateId || undefined,
+      prompt: prompt || undefined,
+    }),
   });
   const d = await r.json();
   if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
@@ -117,7 +123,11 @@ async function handleGenerate(chatId, imageBase64, text) {
     const parsed = await callVoiceGenerate(text);
     const wantVideo = /video|movie|animate|moving/i.test(text) || (parsed.type === 'video');
     if (wantVideo) {
-      const result = await callImg2vid(imageBase64, parsed.scenarioId, parsed.customPrompt);
+      const result = await callImg2vid(imageBase64, {
+        scenarioId: parsed.scenarioId,
+        templateId: parsed.templateId,
+        prompt: parsed.customPrompt,
+      });
       if (!result.video_url) throw new Error('No video URL');
       const buf = await downloadFile(result.video_url);
       const tmp = path.join('/tmp', `niptuck-vid-${Date.now()}.mp4`);

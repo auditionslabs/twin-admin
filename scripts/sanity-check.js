@@ -2,7 +2,9 @@
 /**
  * API sanity check – verifies twin-admin endpoints
  */
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../../devops/.env') });
 const args = process.argv.slice(2).filter(a => !a.startsWith('-'));
 const skipVideo = process.argv.includes('--skip-video');
 const showHelp = process.argv.includes('--help') || process.argv.includes('-h');

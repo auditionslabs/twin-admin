@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '../devops/.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,11 +21,18 @@ app.get('/api/config', (req, res) => {
 
 // Scenario library – sports, casual, family, etc.
 const scenarios = require('./scenarios');
+const motionTemplates = require('./motion-templates');
+
 app.get('/api/demo/scenarios', (req, res) => {
   const { category } = req.query;
   let list = scenarios;
   if (category) list = scenarios.filter(s => s.category === category);
   res.json({ scenarios: list });
+});
+
+// MotionMuse-style motion templates
+app.get('/api/demo/motion-templates', (req, res) => {
+  res.json({ templates: motionTemplates });
 });
 
 app.get('/api/licenses/validate', (req, res) => {
@@ -334,10 +342,11 @@ app.post('/api/demo/scenario-image', async (req, res) => {
 
 // Img2vid – photo to video (Fal LTX, Replicate fallback)
 app.post('/api/demo/img2vid', async (req, res) => {
-  const { image, prompt, scenarioId } = req.body;
+  const { image, prompt, scenarioId, templateId } = req.body;
   if (!image) return res.status(400).json({ error: 'Missing image' });
   const scenario = scenarios.find(s => s.id === scenarioId);
-  const videoPrompt = prompt || (scenario ? scenario.videoPrompt : 'The person moves naturally, subtle motion, professional quality.');
+  const template = motionTemplates.find(t => t.id === templateId);
+  const videoPrompt = prompt || (template ? template.videoPrompt : (scenario ? scenario.videoPrompt : 'The person moves naturally, subtle motion, professional quality.'));
 
   const imageUrl = image.startsWith('data:') ? image : `data:image/jpeg;base64,${image.replace(/^data:image\/\w+;base64,/, '')}`;
 
@@ -371,6 +380,25 @@ app.post('/api/demo/img2vid', async (req, res) => {
   }
 
   if (REPLICATE_TOKEN) {
+    // When we have a motion prompt, try FramePack (supports prompt) for better template control
+    if (videoPrompt && videoPrompt !== 'The person moves naturally, subtle motion, professional quality.') {
+      try {
+        const Replicate = require('replicate').default;
+        const replicate = new Replicate({ auth: REPLICATE_TOKEN });
+        const output = await replicate.run('zsxkib/framepack', {
+          input: {
+            input_image: imageUrl,
+            prompt: videoPrompt.slice(0, 500),
+            total_video_length_seconds: 4,
+          },
+        });
+        const outUrl = output?.url || (typeof output === 'string' ? output : (Array.isArray(output) ? output[0] : output));
+        if (outUrl) return res.json({ video_url: outUrl });
+      } catch (e) {
+        console.error('Replicate FramePack img2vid error:', e.message);
+      }
+    }
+    // Fallback: ms-img2vid (no prompt, generic motion) – faster and cheaper
     try {
       const Replicate = require('replicate').default;
       const replicate = new Replicate({ auth: REPLICATE_TOKEN });
@@ -439,15 +467,17 @@ app.post('/api/demo/voice-generate', async (req, res) => {
   if (!inputText) return res.status(400).json({ error: 'Missing text or audio' });
 
   const scenarioIds = scenarios.map(s => s.id).join(', ');
+  const templateList = motionTemplates.map(t => `${t.id}(${t.name})`).join(', ');
   const prompt = `The user said: "${inputText}"
 
 They want to see themselves in a scenario (image or video). Extract:
 1. scenarioId: one of [${scenarioIds}] or null
-2. customPrompt: their custom idea (e.g. "at the beach", "like Brad Pitt") or null
-3. celebrity: if they said "look like X" or "like X" – the celebrity name, or null
-4. type: "image" or "video" based on context (default image)
+2. templateId: for motion/video style, one of [${templateList}] or null (use when they say "gentle sway", "dancing", "hair toss", "smile reveal", etc.)
+3. customPrompt: their custom idea (e.g. "at the beach", "like Brad Pitt") or null
+4. celebrity: if they said "look like X" or "like X" – the celebrity name, or null
+5. type: "image" or "video" based on context (default image; prefer video if templateId or "video"/"animate"/"moving" in text)
 
-Reply JSON only: {"scenarioId":"beach"|null,"customPrompt":"..."|null,"celebrity":"..."|null,"type":"image"|"video"}`;
+Reply JSON only: {"scenarioId":"beach"|null,"templateId":"gentle-sway"|null,"customPrompt":"..."|null,"celebrity":"..."|null,"type":"image"|"video"}`;
 
   try {
     const OpenAI = require('openai').default;
@@ -463,6 +493,7 @@ Reply JSON only: {"scenarioId":"beach"|null,"customPrompt":"..."|null,"celebrity
     res.json({
       action: 'generate',
       scenarioId: parsed.scenarioId || null,
+      templateId: parsed.templateId || null,
       customPrompt: parsed.customPrompt || null,
       celebrity: parsed.celebrity || null,
       type: parsed.type || 'image',

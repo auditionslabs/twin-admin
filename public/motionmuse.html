@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MotionMuse – Upload Image → Get Video</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0f0f12 0%, #1a1a24 50%, #0f0f12 100%);
+      color: #e8e8e8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem;
+    }
+    h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); margin-bottom: 0.25rem; letter-spacing: -0.02em; }
+    .sub { color: #888; margin-bottom: 1.5rem; font-size: 0.95rem; }
+    .sub a { color: #0af; }
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      max-width: 960px;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 700px) { .flow { grid-template-columns: 1fr; } }
+    .panel {
+      background: rgba(20, 20, 28, 0.8);
+      border: 1px solid #2a2a35;
+      border-radius: 14px;
+      padding: 1.25rem;
+      min-height: 280px;
+    }
+    .panel h3 { font-size: 0.85rem; color: #6aa; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 0.75rem; }
+    .upload-zone {
+      border: 2px dashed #3a3a4a;
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .upload-zone:hover, .upload-zone.dragover { border-color: #0af; background: rgba(0,170,255,0.08); }
+    .upload-zone.has-image { border-style: solid; border-color: #1a4a4a; }
+    .upload-zone .icon { font-size: 2.5rem; margin-bottom: 0.5rem; opacity: 0.7; }
+    .upload-zone .hint { font-size: 0.9rem; color: #666; }
+    .upload-zone img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
+    .templates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 0.5rem;
+    }
+    .template-card {
+      background: #1a1a24;
+      border: 1px solid #2a2a35;
+      border-radius: 10px;
+      padding: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .template-card:hover { border-color: #0af; box-shadow: 0 0 12px rgba(0,170,255,0.2); }
+    .template-card.active { border-color: #0af; background: rgba(0,170,255,0.12); }
+    .template-card .icon { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    .template-card .name { font-size: 0.75rem; color: #aaa; }
+    .prompt-row { margin-top: 0.75rem; }
+    .prompt-row label { font-size: 0.8rem; color: #888; display: block; margin-bottom: 0.35rem; }
+    .prompt-row input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      background: #1a1a24;
+      border: 1px solid #2a2a35;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 0.9rem;
+    }
+    .prompt-row input::placeholder { color: #555; }
+    .actions { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; align-items: center; }
+    .btn {
+      padding: 0.9rem 1.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover:not(:disabled) { transform: scale(1.02); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-generate {
+      background: linear-gradient(135deg, #0af, #08c);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(0,170,255,0.3);
+    }
+    .btn-generate:hover:not(:disabled) { box-shadow: 0 0 28px rgba(0,170,255,0.45); }
+    .btn-download {
+      background: #1a3a3a;
+      color: #0dd;
+      border: 1px solid #2a5a5a;
+    }
+    .btn-download:hover:not(:disabled) { border-color: #0dd; color: #0ff; }
+    .status {
+      margin-top: 1rem;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      max-width: 600px;
+      font-size: 0.95rem;
+    }
+    .status.error { background: rgba(255,60,60,0.15); color: #f88; }
+    .status.loading { background: rgba(0,150,255,0.1); color: #8af; }
+    .status.success { background: rgba(0,180,100,0.12); color: #8f8; }
+    .result-wrap {
+      max-width: 720px;
+      width: 100%;
+      margin-top: 1rem;
+      background: rgba(20, 20, 28, 0.8);
+      border: 1px solid #2a2a35;
+      border-radius: 14px;
+      overflow: hidden;
+      display: none;
+    }
+    .result-wrap.show { display: block; }
+    .result-wrap video { width: 100%; display: block; }
+    .result-label { font-size: 0.85rem; color: #6aa; padding: 0.75rem 1rem; border-bottom: 1px solid #2a2a35; }
+    .preview-panel {
+      max-width: 400px;
+      width: 100%;
+      margin-top: 1rem;
+      background: rgba(20, 20, 28, 0.8);
+      border: 1px solid #2a2a35;
+      border-radius: 12px;
+      overflow: hidden;
+      display: none;
+    }
+    .preview-panel.show { display: block; }
+    .preview-panel .label { font-size: 0.8rem; color: #6aa; padding: 0.5rem 1rem; }
+    .preview-panel video { width: 100%; display: block; }
+    .preview-panel .no-preview { padding: 1.5rem; color: #666; font-size: 0.9rem; }
+    .back-link { color: #6aa; font-size: 0.9rem; margin-top: 1rem; }
+    .back-link a { color: #0af; }
+  </style>
+</head>
+<body>
+  <h1>MotionMuse</h1>
+  <p class="sub">Upload one image → Pick a motion template → Generate video. <a href="/demo.html">NipTuck Demo</a> · <a href="/guide.html">Setup</a></p>
+
+  <div class="flow">
+    <div class="panel">
+      <h3>1. Upload your image</h3>
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-preview" id="uploadPreview">
+          <div class="icon">📷</div>
+          <div class="hint">Drag & drop or click to choose</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>2. Pick a motion template</h3>
+      <div id="templatesGrid" class="templates-grid"></div>
+      <div class="prompt-row">
+        <label>Optional prompt (override template)</label>
+        <input type="text" id="customPrompt" placeholder="e.g. The person waves slowly, cinematic" maxlength="400">
+      </div>
+    </div>
+  </div>
+
+  <div id="previewPanel" class="preview-panel">
+    <div class="label">Preview – what this motion looks like</div>
+    <video id="previewVideo" muted loop playsinline></video>
+    <div id="noPreview" class="no-preview" style="display:none">Add your image and Generate to see your result</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-generate" id="generateBtn" disabled>Generate video</button>
+    <button class="btn btn-download" id="downloadBtn" disabled style="display:none">Download video</button>
+  </div>
+
+  <div id="status" class="status"></div>
+  <div id="resultWrap" class="result-wrap">
+    <div class="result-label">Your video</div>
+    <video id="resultVideo" controls playsinline></video>
+  </div>
+
+  <p class="back-link"><a href="/">← Back</a></p>
+
+  <input type="file" id="fileInput" accept="image/*" style="display:none">
+
+  <script>
+    const uploadZone = document.getElementById('uploadZone');
+    const uploadPreview = document.getElementById('uploadPreview');
+    const fileInput = document.getElementById('fileInput');
+    const templatesGrid = document.getElementById('templatesGrid');
+    const customPrompt = document.getElementById('customPrompt');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const status = document.getElementById('status');
+    const resultWrap = document.getElementById('resultWrap');
+    const resultVideo = document.getElementById('resultVideo');
+
+    let uploadedImage = null;
+    let selectedTemplateId = null;
+    let lastVideoUrl = null;
+
+    function setStatus(msg, type = '') {
+      status.textContent = msg;
+      status.className = 'status ' + type;
+    }
+
+    let templatesById = {};
+    function renderTemplates() {
+      fetch('/api/demo/motion-templates')
+        .then(r => r.json())
+        .then(({ templates }) => {
+          templatesById = (templates || []).reduce((a, t) => { a[t.id] = t; return a; }, {});
+          templatesGrid.innerHTML = (templates || []).map(t => `
+            <div class="template-card" data-id="${t.id}" data-prompt="${(t.videoPrompt || '').replace(/"/g, '&quot;')}">
+              <div class="icon">${t.icon || '🎬'}</div>
+              <div class="name">${t.name}</div>
+            </div>
+          `).join('');
+          templatesGrid.querySelectorAll('.template-card').forEach(card => {
+            card.addEventListener('click', () => {
+              templatesGrid.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
+              card.classList.add('active');
+              selectedTemplateId = card.dataset.id;
+              showTemplatePreview(selectedTemplateId);
+              updateGenerateState();
+            });
+          });
+        })
+        .catch(() => {
+          templatesGrid.innerHTML = '<p style="color:#888;font-size:0.9rem">Could not load templates.</p>';
+        });
+    }
+
+    function updateGenerateState() {
+      generateBtn.disabled = !uploadedImage;
+    }
+
+    function showTemplatePreview(templateId) {
+      const panel = document.getElementById('previewPanel');
+      const vid = document.getElementById('previewVideo');
+      const noPrev = document.getElementById('noPreview');
+      const t = templatesById[templateId];
+      if (!t) return;
+      panel.classList.add('show');
+      const url = t.previewUrl;
+      if (url) {
+        noPrev.style.display = 'none';
+        vid.style.display = 'block';
+        vid.src = url;
+        vid.play().catch(() => {});
+      } else {
+        noPrev.style.display = 'block';
+        vid.style.display = 'none';
+        vid.src = '';
+      }
+    }
+
+    function setImage(dataUrl) {
+      uploadedImage = dataUrl;
+      uploadZone.classList.add('has-image');
+      uploadPreview.innerHTML = `<img src="${dataUrl}" alt="Preview">`;
+      updateGenerateState();
+    }
+
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer?.files?.[0];
+      if (file && file.type.startsWith('image/')) {
+        const r = new FileReader();
+        r.onload = () => setImage(r.result);
+        r.readAsDataURL(file);
+      }
+    });
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      if (file && file.type.startsWith('image/')) {
+        const r = new FileReader();
+        r.onload = () => setImage(r.result);
+        r.readAsDataURL(file);
+      }
+    });
+
+    generateBtn.addEventListener('click', async () => {
+      if (!uploadedImage) return;
+      generateBtn.disabled = true;
+      setStatus('Generating video… (up to ~3 min)', 'loading');
+      resultWrap.classList.remove('show');
+      downloadBtn.style.display = 'none';
+      try {
+        const r = await fetch('/api/demo/img2vid', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: uploadedImage,
+            templateId: selectedTemplateId,
+            prompt: customPrompt.value.trim() || undefined,
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Video generation failed');
+        lastVideoUrl = data.video_url;
+        if (lastVideoUrl) {
+          resultVideo.src = lastVideoUrl;
+          resultWrap.classList.add('show');
+          downloadBtn.style.display = 'inline-block';
+          setStatus('Video ready. Preview above or download.', 'success');
+        } else {
+          throw new Error('No video URL returned');
+        }
+      } catch (e) {
+        setStatus('Error: ' + e.message, 'error');
+      }
+      generateBtn.disabled = false;
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!lastVideoUrl) return;
+      const a = document.createElement('a');
+      a.href = lastVideoUrl;
+      a.download = 'motionmuse-video.mp4';
+      a.click();
+    });
+
+    renderTemplates();
+    updateGenerateState();
+  </script>
+</body>
+</html>

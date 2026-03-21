@@ -6,7 +6,8 @@
     "start": "node server.js",
     "dev": "node server.js",
     "sanity-check": "node scripts/sanity-check.js",
-    "telegram-bot": "node scripts/telegram-bot.js"
+    "telegram-bot": "node scripts/telegram-bot.js",
+    "seed-previews": "node scripts/seed-previews.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
