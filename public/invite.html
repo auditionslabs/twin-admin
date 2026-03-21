@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NipTuck – Accept Invite</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3; margin: 0; padding: 1.5rem; max-width: 480px; margin: 0 auto; }
+    h1 { font-size: 1.25rem; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+    input, button { padding: 0.6rem; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #e6edf3; width: 100%; margin-bottom: 0.5rem; }
+    button { background: #238636; border-color: #238636; cursor: pointer; }
+    .status { padding: 0.5rem; border-radius: 6px; font-size: 0.9rem; margin-top: 0.5rem; }
+    .status.error { background: #3d1f1f; color: #f85149; }
+    .status.ok { background: #1a2e1a; color: #3fb950; }
+  </style>
+</head>
+<body>
+  <h1>NipTuck – Patient Invite</h1>
+  <div id="loading" class="card">Loading…</div>
+  <div id="consentForm" class="card" style="display:none">
+    <p>You’ve been invited by your doctor. Sign in or create an account to give consent and access your records.</p>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button id="signupBtn">Create Account</button>
+    <button id="signinBtn" style="background:transparent;border-color:#30363d">Sign In</button>
+    <div id="status" class="status" style="display:none"></div>
+  </div>
+  <div id="done" class="card" style="display:none">
+    <p class="status ok">Consent recorded. You can now <a href="/demo.html" style="color:#58a6ff">use the demo</a>.</p>
+  </div>
+
+  <script>
+    let API_URL = location.origin + '/api';
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      if (cfg.niptuckApiUrl) API_URL = cfg.niptuckApiUrl.replace(/\/$/, '');
+    }).catch(() => {});
+
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    if (!token) {
+      document.getElementById('loading').innerHTML = '<p class="status error">Invalid or missing invite link.</p>';
+    } else {
+      fetch(API_URL + '/admin/invite/' + token)
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('consentForm').style.display = 'block';
+          if (data.patient?.email) document.getElementById('email').value = data.patient.email;
+        })
+        .catch(() => {
+          document.getElementById('loading').innerHTML = '<p class="status error">Invalid or expired invite.</p>';
+        });
+    }
+
+    async function doConsent(isSignup) {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      if (!email || !password) {
+        document.getElementById('status').textContent = 'Email and password required';
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').style.display = 'block';
+        return;
+      }
+      try {
+        const authRes = isSignup
+          ? await fetch(API_URL + '/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
+          : await fetch(API_URL + '/auth/signin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+        const auth = await authRes.json();
+        if (!authRes.ok) throw new Error(auth.error || 'Auth failed');
+        const consentRes = await fetch(API_URL + '/admin/consent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + auth.token },
+          body: JSON.stringify({ token }),
+        });
+        const consent = await consentRes.json();
+        if (!consentRes.ok) throw new Error(consent.error || 'Consent failed');
+        document.getElementById('consentForm').style.display = 'none';
+        document.getElementById('done').style.display = 'block';
+      } catch (e) {
+        document.getElementById('status').textContent = e.message;
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').style.display = 'block';
+      }
+    }
+    document.getElementById('signupBtn').addEventListener('click', () => doConsent(true));
+    document.getElementById('signinBtn').addEventListener('click', () => doConsent(false));
+  </script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NipTuck Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #0d1117; color: #e6edf3; margin: 0; padding: 1.5rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .card h2 { font-size: 1rem; color: #8b949e; margin: 0 0 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    input, button { padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #e6edf3; }
+    button { cursor: pointer; background: #238636; border-color: #238636; }
+    button:hover { background: #2ea043; }
+    button.secondary { background: transparent; border-color: #30363d; }
+    .row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+    .status { padding: 0.5rem; border-radius: 6px; font-size: 0.9rem; }
+    .status.error { background: #3d1f1f; color: #f85149; }
+    .status.ok { background: #1a2e1a; color: #3fb950; }
+    #loginForm, #adminPanel { max-width: 720px; }
+    #adminPanel { display: none; }
+    #adminPanel.show { display: block; }
+    a { color: #58a6ff; }
+    pre { overflow-x: auto; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1>NipTuck Admin Panel</h1>
+  <p><a href="/demo.html">← Demo</a> | <a href="/guide.html">Guide</a></p>
+
+  <div id="loginForm" class="card">
+    <h2>Sign In</h2>
+    <p>Sign in with your niptuck-api account. First user with SUPER_ADMIN_EMAIL becomes super_admin.</p>
+    <div class="row">
+      <input type="email" id="email" placeholder="Email" style="width:200px">
+      <input type="password" id="password" placeholder="Password" style="width:200px">
+      <button id="signinBtn">Sign In</button>
+      <button id="signupBtn" class="secondary">Sign Up</button>
+    </div>
+    <div id="loginStatus" class="status" style="display:none"></div>
+  </div>
+
+  <div id="adminPanel" class="card">
+    <h2>Welcome, <span id="userEmail"></span> (<span id="userRole"></span>)</h2>
+    <div class="row">
+      <button id="logoutBtn" class="secondary">Log Out</button>
+    </div>
+
+    <div class="card" id="analyticsCard">
+      <h2>Analytics</h2>
+      <div id="analyticsContent">Loading…</div>
+    </div>
+
+    <div class="card" id="usersCard" style="display:none">
+      <h2>Users (super_admin)</h2>
+      <div id="usersContent">Loading…</div>
+    </div>
+
+    <div class="card" id="patientsCard">
+      <h2>Patients</h2>
+      <div class="row">
+        <input type="email" id="inviteEmail" placeholder="Patient email (optional)" style="width:200px">
+        <input type="text" id="inviteName" placeholder="Name (optional)" style="width:150px">
+        <button id="inviteBtn">Invite Patient</button>
+      </div>
+      <div id="inviteResult" style="margin-top:0.5rem;font-size:0.9rem"></div>
+      <div id="patientsContent" style="margin-top:1rem">Loading…</div>
+    </div>
+  </div>
+
+  <script>
+    let API_URL = location.origin + '/api';
+    fetch('/api/config').then(r => r.json()).then(cfg => {
+      if (cfg.niptuckApiUrl) API_URL = cfg.niptuckApiUrl.replace(/\/$/, '');
+    }).catch(() => {});
+    let token = localStorage.getItem('niptuck_admin_token');
+
+    function setStatus(el, text, isError) {
+      const s = document.getElementById(el);
+      s.textContent = text;
+      s.className = 'status ' + (isError ? 'error' : 'ok');
+      s.style.display = 'block';
+    }
+
+    async function api(path, opts = {}) {
+      const url = path.startsWith('http') ? path : API_URL + (path.startsWith('/') ? path : '/' + path);
+      const res = await fetch(url, {
+        ...opts,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...opts.headers,
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    document.getElementById('signinBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      if (!email || !password) { setStatus('loginStatus', 'Email and password required', true); return; }
+      try {
+        const data = await api('/auth/signin', { method: 'POST', body: JSON.stringify({ email, password }) });
+        token = data.token;
+        localStorage.setItem('niptuck_admin_token', token);
+        setStatus('loginStatus', 'Signed in.', false);
+        loadAdmin();
+      } catch (e) {
+        setStatus('loginStatus', e.message, true);
+      }
+    });
+
+    document.getElementById('signupBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      if (!email || !password) { setStatus('loginStatus', 'Email and password required', true); return; }
+      try {
+        const data = await api('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password }) });
+        token = data.token;
+        localStorage.setItem('niptuck_admin_token', token);
+        setStatus('loginStatus', 'Account created. Signed in.', false);
+        loadAdmin();
+      } catch (e) {
+        setStatus('loginStatus', e.message, true);
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      token = null;
+      localStorage.removeItem('niptuck_admin_token');
+      document.getElementById('adminPanel').classList.remove('show');
+      document.getElementById('loginForm').style.display = 'block';
+    });
+
+    async function loadAdmin() {
+      if (!token) return;
+      try {
+        const me = await api('/auth/me');
+        document.getElementById('userEmail').textContent = me.email;
+        document.getElementById('userRole').textContent = me.role;
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminPanel').classList.add('show');
+
+        const analytics = await api('/admin/analytics');
+        document.getElementById('analyticsContent').innerHTML = `
+          <p>Patients: ${analytics.totalPatients} | Records: ${analytics.totalRecords} | Avg rating: ${analytics.avgRating != null ? analytics.avgRating.toFixed(1) : '—'} | Last 30d: ${analytics.recordsLast30d}</p>
+        `;
+
+        if (me.role === 'super_admin') {
+          document.getElementById('usersCard').style.display = 'block';
+          const users = await api('/admin/users');
+          document.getElementById('usersContent').innerHTML = '<pre>' + JSON.stringify(users.users, null, 2) + '</pre>';
+        }
+
+        const patients = await api('/admin/patients');
+        document.getElementById('patientsContent').innerHTML = patients.patients.length
+          ? '<pre>' + JSON.stringify(patients.patients, null, 2) + '</pre>'
+          : '<p>No patients yet. Use Invite Patient to create one.</p>';
+      } catch (e) {
+        setStatus('loginStatus', e.message, true);
+        token = null;
+      }
+    }
+
+    document.getElementById('inviteBtn').addEventListener('click', async () => {
+      const email = document.getElementById('inviteEmail').value;
+      const name = document.getElementById('inviteName').value;
+      try {
+        const data = await api('/admin/patients/invite', {
+          method: 'POST',
+          body: JSON.stringify({ email: email || undefined, name: name || undefined }),
+        });
+        document.getElementById('inviteResult').innerHTML = `
+          <p>Invite created. Share this link or QR code:</p>
+          <p><a href="${data.inviteUrl}" target="_blank">${data.inviteUrl}</a></p>
+          <p>QR payload: <code>${data.qrPayload}</code></p>
+        `;
+        loadAdmin();
+      } catch (e) {
+        document.getElementById('inviteResult').innerHTML = '<span class="status error">' + e.message + '</span>';
+      }
+    });
+
+    if (token) loadAdmin();
+  </script>
+</body>
+</html>

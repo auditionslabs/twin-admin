@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NipTuck Stream Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+      background: #0d0d0d;
+      color: #ccc;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .panel {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #222;
+    }
+    .header h1 { font-size: 1.1rem; margin: 0; color: #888; font-weight: 600; }
+    .header a { color: #6aa; font-size: 0.85rem; }
+    .pad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    @media (min-width: 520px) {
+      .pad-grid { grid-template-columns: repeat(8, 1fr); }
+    }
+    .pad {
+      aspect-ratio: 1;
+      min-height: 60px;
+      border: 2px solid #2a2a2a;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+      color: #888;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.08s;
+      user-select: none;
+    }
+    .pad:hover { border-color: #444; background: #252525; color: #aaa; }
+    .pad:active, .pad.pressed {
+      transform: scale(0.96);
+      border-color: #0aa;
+      box-shadow: inset 0 0 12px rgba(0,170,170,0.3);
+      color: #0ff;
+    }
+    .pad .icon { font-size: 1.4rem; margin-bottom: 0.2rem; }
+    .pad.scan { --accent: #0aa; }
+    .pad.doc { --accent: #4a90d9; }
+    .pad.live { --accent: #d44; }
+    .pad.mic { --accent: #8a8; }
+    .pad:active { border-color: var(--accent, #0aa); }
+    .pad.doc:active { border-color: #4a90d9; box-shadow: inset 0 0 12px rgba(74,144,217,0.3); }
+    .pad.live:active { border-color: #d44; box-shadow: inset 0 0 12px rgba(212,68,68,0.3); }
+    .pad.mic:active { border-color: #8a8; box-shadow: inset 0 0 12px rgba(136,170,136,0.3); }
+    .section { margin-bottom: 1.25rem; }
+    .section-title { font-size: 0.75rem; color: #555; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    .status-bar {
+      margin-top: 1rem;
+      padding: 0.5rem 0.75rem;
+      background: #111;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #666;
+    }
+    .status-bar.connected { color: #4a4; }
+    .open-demo { display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem; background: #222; color: #8cc; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+    .open-demo:hover { background: #333; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="header">
+      <h1>NipTuck Stream Panel</h1>
+      <a href="/demo.html" target="_blank">Open Demo</a>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Actions</div>
+      <div class="pad-grid">
+        <button class="pad scan" data-action="scan" title="Trigger scan">
+          <span class="icon">📷</span>
+          <span>Scan</span>
+        </button>
+        <button class="pad doc" data-action="docXVideo" title="Doc X video">
+          <span class="icon">▶</span>
+          <span>Doc X</span>
+        </button>
+        <button class="pad live" data-action="goLive" title="Go Live">
+          <span class="icon">🔴</span>
+          <span>Live</span>
+        </button>
+        <button class="pad mic" data-action="mic" title="Start mic">
+          <span class="icon">🎤</span>
+          <span>Mic</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Scenarios (Image)</div>
+      <div class="pad-grid" id="scenarioPads"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Quick Scenarios (Video)</div>
+      <div class="pad-grid" id="videoPads"></div>
+    </div>
+
+    <div id="statusBar" class="status-bar">Open demo in another tab. Panel sends commands via BroadcastChannel.</div>
+    <a href="/demo.html" target="_blank" class="open-demo">Open Demo →</a>
+  </div>
+
+  <script>
+    const CHANNEL = 'niptuck-stream';
+    const channel = new BroadcastChannel(CHANNEL);
+    const statusBar = document.getElementById('statusBar');
+
+    function playPadSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = 180;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+      } catch (_) {}
+    }
+
+    function send(action, data = {}) {
+      playPadSound();
+      channel.postMessage({ action, ...data });
+      statusBar.textContent = `Sent: ${action}${data.scenarioId ? ' ' + data.scenarioId : ''}`;
+      statusBar.classList.add('connected');
+      setTimeout(() => statusBar.classList.remove('connected'), 800);
+      const pad = document.querySelector(`[data-action="${action}"]`) || document.querySelector(`[data-scenario="${data.scenarioId}"]`);
+      if (pad) {
+        pad.classList.add('pressed');
+        setTimeout(() => pad.classList.remove('pressed'), 120);
+      }
+    }
+
+    function createPad(id, name, icon, type) {
+      const btn = document.createElement('button');
+      btn.className = 'pad';
+      btn.dataset.scenario = id;
+      btn.dataset.type = type;
+      btn.innerHTML = `<span class="icon">${icon || '📷'}</span><span>${name}</span>`;
+      btn.addEventListener('click', () => {
+        send('scenario', { scenarioId: id, type });
+        btn.classList.add('pressed');
+        setTimeout(() => btn.classList.remove('pressed'), 120);
+      });
+      return btn;
+    }
+
+    fetch('/api/demo/scenarios')
+      .then(r => r.json())
+      .then(d => {
+        const scenarios = d.scenarios || [];
+        const imageGrid = document.getElementById('scenarioPads');
+        const videoGrid = document.getElementById('videoPads');
+        const hot = scenarios.slice(0, 8);
+        hot.forEach(s => {
+          imageGrid.appendChild(createPad(s.id, s.name.slice(0, 8), s.icon, 'image'));
+          videoGrid.appendChild(createPad(s.id, s.name.slice(0, 8), s.icon, 'video'));
+        });
+      })
+      .catch(() => {});
+
+    document.querySelectorAll('.pad[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        if (action === 'scenario') return;
+        send(action);
+      });
+    });
+  </script>
+</body>
+</html>

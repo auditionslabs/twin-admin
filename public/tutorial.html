@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NipTuck – Full Demo Tutorial (Doc & Patient Views)</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: #0a0a0f;
+      color: #e8e8e8;
+      line-height: 1.6;
+    }
+    .wrap { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); margin: 0 0 0.5rem; }
+    .tag { color: #c44; font-size: 1rem; margin-bottom: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      margin: 2.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #252535;
+    }
+    h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; color: #aaa; }
+    p { margin: 0 0 1rem; color: #bbb; }
+    .perspective {
+      background: #15151f;
+      border: 1px solid #252535;
+      border-radius: 12px;
+      padding: 1.5rem 1.75rem;
+      margin: 1rem 0;
+    }
+    .perspective.doc { border-left: 4px solid #4a90d9; }
+    .perspective.patient { border-left: 4px solid #4a4; }
+    .perspective h3 { margin-top: 0; color: inherit; }
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .scenario-chip {
+      background: #1a1a28;
+      border: 1px solid #2a2a3a;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    .scenario-chip .icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0;
+      align-items: center;
+    }
+    .flow-step {
+      background: #1a1a28;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+    .flow-step::after { content: '→'; margin-left: 0.5rem; color: #555; }
+    .flow-step:last-child::after { display: none; }
+    .btn {
+      display: inline-block;
+      padding: 0.9rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: linear-gradient(135deg, #c44, #a22); color: white; }
+    .btn-primary:hover { transform: scale(1.02); box-shadow: 0 4px 20px rgba(200,68,68,0.3); }
+    .btn-secondary { background: #252535; color: #e8e8e8; }
+    .btn-secondary:hover { background: #353545; }
+    .ctr { margin-top: 1.5rem; }
+    .ctr a { margin-right: 0.75rem; margin-bottom: 0.5rem; }
+    .mockup {
+      background: #0d0d12;
+      border: 1px solid #1a1a28;
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      color: #888;
+    }
+    .mockup-title { color: #6aa; font-weight: 600; margin-bottom: 0.5rem; }
+    ul { padding-left: 1.5rem; color: #aaa; }
+    .nav-links { margin-bottom: 2rem; }
+    .nav-links a { color: #8cc; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="nav-links"><a href="/">Home</a> · <a href="/guide.html">Setup</a> · <a href="/demo.html">Demo</a> · <a href="/demo-mib.html">Big Screen</a></p>
+
+    <h1>NipTuck Full Demo Tutorial</h1>
+    <p class="tag">Both perspectives: Doc (clinic) & Patient (home) · HeyGen avatars · Body contouring magic</p>
+
+    <h2>Two Sides of the Experience</h2>
+    <p>NipTuck works in two modes: the <strong>clinic view</strong> (doctor) and the <strong>home view</strong> (patient). Each sees a different angle of the same consultation.</p>
+
+    <div class="perspective doc">
+      <h3>👨‍⚕️ Doc View – Clinic Interior, One-on-One</h3>
+      <p><strong>Camera angle:</strong> Professional consultation setup. The doctor sees the patient on screen (or in person with a kiosk). Clean clinic interior.</p>
+      <p><strong>HeyGen avatar (Doc X):</strong> A talking avatar delivers the blunt cosmetic assessment. The avatar speaks the patient’s score, celebrity lookalikes, and recommendations – like a comedian consultant.</p>
+      <p><strong>Flow:</strong></p>
+      <div class="flow">
+        <span class="flow-step">Patient scans</span>
+        <span class="flow-step">Assessment generated</span>
+        <span class="flow-step">Doc X video speaks it</span>
+        <span class="flow-step">Discuss via mic</span>
+      </div>
+      <div class="ctr">
+        <a href="/demo.html" class="btn btn-primary">Try Doc View →</a>
+      </div>
+    </div>
+
+    <div class="perspective patient">
+      <h3>🏠 Patient View – At Home, Having Fun, Modeling</h3>
+      <p><strong>Camera angle:</strong> Home interior – living room, bedroom, wherever the patient is. Casual, fun, like trying on looks in the mirror.</p>
+      <p><strong>The magic:</strong> Patient scans, then picks scenarios (beach, gym, red carpet, boudoir, action hero…). They <strong>see themselves transformed</strong> – body contouring, different settings, different vibes. It’s modeling and play.</p>
+      <p><strong>Flow:</strong></p>
+      <div class="flow">
+        <span class="flow-step">Scan in frame</span>
+        <span class="flow-step">Pick scenario</span>
+        <span class="flow-step">AI generates image/video</span>
+        <span class="flow-step">See your look – magically</span>
+      </div>
+      <div class="ctr">
+        <a href="/demo.html" class="btn btn-primary">Try Patient View (scenarios) →</a>
+        <a href="/demo-mib.html" class="btn btn-secondary">Big Screen Demo →</a>
+      </div>
+    </div>
+
+    <h2>Body Contouring – The “Magic”</h2>
+    <p>Using your scan, the system applies <strong>professional body contouring</strong> to generated images. Same face, same you – but with subtle enhancements: slimmer silhouette, toned look, different hair, different setting.</p>
+    <p>It’s not a filter – it’s AI-generated imagery that keeps your likeness while showing “what could be” in different scenarios. Perfect for consultations and at-home try-on.</p>
+
+    <h2>Simulated Situations You Can Try</h2>
+    <p>Run these scenarios in the demo to see both sides:</p>
+    <div class="scenario-grid">
+      <div class="scenario-chip"><span class="icon">👨‍⚕️</span><br>In-clinic consultation</div>
+      <div class="scenario-chip"><span class="icon">🏠</span><br>At-home try-on</div>
+      <div class="scenario-chip"><span class="icon">🏖️</span><br>Beach / vacation</div>
+      <div class="scenario-chip"><span class="icon">💪</span><br>Gym / fitness</div>
+      <div class="scenario-chip"><span class="icon">🌟</span><br>Red carpet</div>
+      <div class="scenario-chip"><span class="icon">💥</span><br>Action movie star</div>
+      <div class="scenario-chip"><span class="icon">🌹</span><br>Boudoir / romantic</div>
+      <div class="scenario-chip"><span class="icon">📸</span><br>Studio portrait</div>
+    </div>
+
+    <h2>Step-by-Step Tutorial</h2>
+
+    <h3>1. Start the demo</h3>
+    <p>Open <a href="/demo.html">demo.html</a> or <a href="/guide.html">guide.html</a>. Allow camera access. Position yourself waist-up or full body.</p>
+
+    <h3>2. Scan</h3>
+    <p>Click <strong>Scan me</strong>. The sci-fi overlay runs. You get: attractiveness score, celebrity lookalikes, blunt assessment (spoken aloud).</p>
+
+    <h3>3. Doc side: Doc X video</h3>
+    <p>Click <strong>▶ Doc X video</strong>. A HeyGen avatar delivers your assessment on video (~30s). This is the “clinic consultation” moment – the avatar speaks for the doctor.</p>
+
+    <h3>4. Patient side: See yourself in scenarios</h3>
+    <p>Scroll to <strong>See yourself in different scenarios</strong>. Pick a card (beach, gym, action hero, boudoir…). Choose Image or Video. Your scan is transformed into that setting – body contouring applied, same you, new look.</p>
+
+    <h3>5. Voice it</h3>
+    <p>Say “Put me at the beach” or “I want to look like an action hero.” The system parses your intent and generates the matching scenario.</p>
+
+    <h2>Videos & Tutorials (Coming Soon)</h2>
+    <p>Planned:</p>
+    <ul>
+      <li><strong>Doc view walkthrough</strong> – Clinic interior, Doc X avatar, one-on-one consultation flow</li>
+      <li><strong>Patient view walkthrough</strong> – Home setup, camera angle, fun modeling, body contour reveal</li>
+      <li><strong>HeyGen avatar demos</strong> – Pre-recorded Doc X samples for different assessments</li>
+    </ul>
+    <p>For now, <a href="/demo.html">run the live demo</a> to experience both sides.</p>
+
+    <div class="ctr" style="margin-top: 2.5rem;">
+      <a href="/demo.html" class="btn btn-primary">Start Live Demo</a>
+      <a href="/demo-mib.html" class="btn btn-secondary">Big Screen (MIB Style)</a>
+      <a href="/guide.html" class="btn btn-secondary">Setup Guide</a>
+    </div>
+  </div>
+</body>
+</html>

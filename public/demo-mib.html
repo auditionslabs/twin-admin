@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NipTuck – Big Screen Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --mib-bg: #000;
+      --mib-border: #0a3;
+      --mib-glow: #0f0;
+      --mib-text: #0c6;
+      --mib-dim: #033;
+    }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: var(--mib-bg); }
+    body {
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--mib-text);
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      grid-template-rows: 1fr;
+      gap: 0;
+    }
+    @media (max-width: 900px) {
+      body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    }
+    .mib-sidebar {
+      background: linear-gradient(180deg, #040 0%, #000 100%);
+      border-right: 2px solid var(--mib-border);
+      box-shadow: 0 0 30px rgba(0,255,0,0.15);
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 10px;
+    }
+    .mib-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      color: var(--mib-glow);
+      text-shadow: 0 0 10px rgba(0,255,0,0.6);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--mib-dim);
+    }
+    .mib-cam {
+      position: relative;
+      aspect-ratio: 4/3;
+      background: #000;
+      border: 2px solid var(--mib-border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .mib-cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mib-cam canvas {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    .mib-scan-bar {
+      height: 3px;
+      background: rgba(0,255,0,0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .mib-scan-bar .fill { height: 100%; background: var(--mib-glow); transition: width 0.1s; width: 0%; }
+    .mib-btn {
+      padding: 12px 20px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: transparent;
+      border: 2px solid var(--mib-border);
+      color: var(--mib-glow);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .mib-btn:hover:not(:disabled) {
+      box-shadow: 0 0 20px rgba(0,255,0,0.4);
+      background: rgba(0,255,0,0.1);
+    }
+    .mib-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .mib-btn.primary { background: var(--mib-border); color: #000; }
+    .mib-status { font-size: 0.7rem; color: var(--mib-dim); min-height: 1.2em; }
+    .mib-main {
+      display: flex;
+      flex-direction: column;
+      background: var(--mib-bg);
+      position: relative;
+      overflow: hidden;
+    }
+    .mib-main::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        linear-gradient(90deg, rgba(0,50,0,0.03) 1px, transparent 1px),
+        linear-gradient(rgba(0,50,0,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+    .mib-header {
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--mib-dim);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.3em;
+      color: var(--mib-dim);
+      text-transform: uppercase;
+    }
+    .mib-header span { color: var(--mib-glow); }
+    .mib-display {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow: auto;
+      min-height: 0;
+    }
+    .mib-result {
+      flex: 1;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .mib-result.show { display: flex; }
+    .mib-result img, .mib-result video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border: 2px solid var(--mib-border);
+      box-shadow: 0 0 40px rgba(0,255,0,0.2);
+    }
+    .mib-grid-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .mib-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .mib-filter {
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      background: transparent;
+      border: 1px solid var(--mib-dim);
+      border-radius: 4px;
+      color: var(--mib-text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mib-filter:hover, .mib-filter.active { border-color: var(--mib-glow); color: var(--mib-glow); }
+    .mib-mode { margin-left: auto; }
+    .mib-mode label { margin-right: 16px; cursor: pointer; font-size: 0.85rem; color: var(--mib-dim); }
+    .mib-mode input:checked + span { color: var(--mib-glow); }
+    .mib-scenarios {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .mib-card {
+      background: rgba(0,30,0,0.6);
+      border: 1px solid var(--mib-dim);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mib-card:hover { border-color: var(--mib-glow); box-shadow: 0 0 15px rgba(0,255,0,0.2); }
+    .mib-card.loading { pointer-events: none; opacity: 0.6; }
+    .mib-card .icon { font-size: 2rem; margin-bottom: 8px; }
+    .mib-card .name { font-size: 0.85rem; color: var(--mib-text); font-weight: 600; }
+    .mib-placeholder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--mib-dim);
+      font-size: 1rem;
+      text-align: center;
+      padding: 40px;
+    }
+    .mib-placeholder.hide { display: none; }
+  </style>
+</head>
+<body>
+  <div class="mib-sidebar">
+    <div class="mib-logo">SUBJECT SCAN</div>
+    <div class="mib-cam" id="camWrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+    </div>
+    <div class="mib-scan-bar" id="scanBar" style="display:none">
+      <div class="fill" id="scanBarFill" style="width:0%"></div>
+    </div>
+    <button class="mib-btn primary" id="scanBtn" disabled>Scan</button>
+    <div class="mib-status" id="status">Start camera to begin</div>
+  </div>
+
+  <div class="mib-main">
+    <div class="mib-header"><span>CLASSIFIED</span> — Scenario Generation</div>
+    <div class="mib-display">
+      <div class="mib-result" id="result">
+        <img id="resultImg" style="display:none" alt="">
+        <video id="resultVideo" style="display:none" controls playsinline></video>
+      </div>
+      <div class="mib-grid-wrap" id="gridWrap">
+        <div class="mib-filters">
+          <button class="mib-filter active" data-category="">All</button>
+          <button class="mib-filter" data-category="sports">Sports</button>
+          <button class="mib-filter" data-category="casual">Casual</button>
+          <button class="mib-filter" data-category="family">Family</button>
+          <button class="mib-filter" data-category="professional">Professional</button>
+          <button class="mib-filter" data-category="wellness">Wellness</button>
+          <button class="mib-filter" data-category="action">Action</button>
+          <button class="mib-filter" data-category="romance">Romance</button>
+          <span class="mib-mode">
+            <label><input type="radio" name="mode" value="image" checked><span>Image</span></label>
+            <label><input type="radio" name="mode" value="video"><span>Video</span></label>
+          </span>
+        </div>
+        <div class="mib-scenarios" id="scenariosGrid"></div>
+        <div class="mib-placeholder" id="placeholder">Complete scan to see scenarios</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const scanBtn = document.getElementById('scanBtn');
+    const status = document.getElementById('status');
+    const scenariosGrid = document.getElementById('scenariosGrid');
+    const gridWrap = document.getElementById('gridWrap');
+    const resultEl = document.getElementById('result');
+    const resultImg = document.getElementById('resultImg');
+    const resultVideo = document.getElementById('resultVideo');
+    const placeholder = document.getElementById('placeholder');
+    const scanBar = document.getElementById('scanBar');
+    const scanBarFill = document.getElementById('scanBarFill');
+
+    let lastScanImage = null;
+    let scenariosList = [];
+    let scanAnim = null;
+    let scanProgressInterval = null;
+
+    function setStatus(txt) { status.textContent = txt; }
+
+    function drawMibScan() {
+      const w = overlay.width, h = overlay.height;
+      const ctx = overlay.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+      const t = Date.now() / 1000;
+      const glow = 0.4 + 0.2 * Math.sin(t * 4);
+      ctx.strokeStyle = `rgba(0, 255, 0, ${glow})`;
+      ctx.lineWidth = 1;
+      for (let i = 0; i < w; i += 30) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, h);
+        ctx.stroke();
+      }
+      for (let j = 0; j < h; j += 30) {
+        ctx.beginPath();
+        ctx.moveTo(0, j);
+        ctx.lineTo(w, j);
+        ctx.stroke();
+      }
+      ctx.fillStyle = `rgba(0, 255, 0, ${0.6 + 0.2 * Math.sin(t * 3)})`;
+      ctx.font = 'bold 12px Orbitron, monospace';
+      ctx.fillText('SCANNING...', w / 2 - 45, 22);
+      const y = ((t * 60) % (h + 40)) - 20;
+      ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+      ctx.fillRect(0, y - 2, w, 4);
+    }
+
+    function captureFrame() {
+      const c = document.createElement('canvas');
+      c.width = video.videoWidth;
+      c.height = video.videoHeight;
+      c.getContext('2d').drawImage(video, 0, 0);
+      return c.toDataURL('image/jpeg', 0.9);
+    }
+
+    function renderScenarios(cat) {
+      const list = cat ? scenariosList.filter(s => s.category === cat) : scenariosList;
+      scenariosGrid.innerHTML = list.map(s => `
+        <div class="mib-card" data-id="${s.id}">
+          <div class="icon">${s.icon || '📷'}</div>
+          <div class="name">${s.name}</div>
+        </div>
+      `).join('');
+      scenariosGrid.querySelectorAll('.mib-card').forEach(card => {
+        card.addEventListener('click', () => {
+          if (gridWrap.classList.contains('loading') || !lastScanImage) return;
+          runGen(card.dataset.id, null, document.querySelector('input[name="mode"]:checked').value);
+        });
+      });
+    }
+
+    async function runGen(scenarioId, customPrompt, type) {
+      gridWrap.classList.add('loading');
+      resultEl.classList.remove('show');
+      setStatus(type === 'video' ? 'Generating video…' : 'Generating image…');
+      try {
+        if (type === 'video') {
+          const r = await fetch('/api/demo/img2vid', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: lastScanImage, scenarioId, prompt: customPrompt })
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'Video failed');
+          resultImg.style.display = 'none';
+          resultVideo.style.display = 'block';
+          resultVideo.src = d.video_url;
+        } else {
+          const r = await fetch('/api/demo/scenario-image', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: lastScanImage, scenarioId, customPrompt })
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'Image failed');
+          resultVideo.style.display = 'none';
+          resultImg.style.display = 'block';
+          resultImg.src = d.image;
+        }
+        resultEl.classList.add('show');
+        placeholder.classList.add('hide');
+        setStatus('Ready.');
+      } catch (e) {
+        setStatus('Error: ' + e.message);
+      }
+      gridWrap.classList.remove('loading');
+    }
+
+    scanBtn.addEventListener('click', async () => {
+      scanBtn.disabled = true;
+      scanBar.style.display = 'block';
+      scanBarFill.style.width = '0%';
+      setStatus('Scanning…');
+      let p = 0;
+      scanProgressInterval = setInterval(() => {
+        p = Math.min(p + 2, 85);
+        scanBarFill.style.width = p + '%';
+      }, 200);
+      function loop() {
+        drawMibScan();
+        scanAnim = requestAnimationFrame(loop);
+      }
+      scanAnim = requestAnimationFrame(loop);
+
+      const base64 = captureFrame();
+      try {
+        const r = await fetch('/api/demo/analyze', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64 })
+        });
+        const data = await r.json();
+        if (scanAnim) cancelAnimationFrame(scanAnim);
+        if (scanProgressInterval) clearInterval(scanProgressInterval);
+        scanBarFill.style.width = '100%';
+        setTimeout(() => { scanBar.style.display = 'none'; }, 400);
+
+        if (!r.ok || !data.personDetected || data.assessment?.startsWith?.('PERSON_NOT_DETECTED')) {
+          setStatus('No person detected.');
+          scanBtn.disabled = false;
+          return;
+        }
+        lastScanImage = base64;
+        setStatus('Scan complete.');
+        fetch('/api/demo/scenarios').then(r2 => r2.json()).then(d => {
+          scenariosList = d.scenarios || [];
+          if (scenariosList.length) placeholder.classList.add('hide');
+          renderScenarios('');
+        });
+      } catch (e) {
+        if (scanAnim) cancelAnimationFrame(scanAnim);
+        if (scanProgressInterval) clearInterval(scanProgressInterval);
+        scanBar.style.display = 'none';
+        setStatus('Error: ' + e.message);
+      }
+      scanBtn.disabled = false;
+    });
+
+    document.querySelectorAll('.mib-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mib-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderScenarios(btn.dataset.category || '');
+      });
+    });
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }
+        });
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+          overlay.width = video.videoWidth;
+          overlay.height = video.videoHeight;
+        };
+        scanBtn.disabled = false;
+        setStatus('Ready. Position yourself, then Scan.');
+      } catch (e) {
+        setStatus('Camera denied.');
+      }
+    }
+
+    startCamera();
+  </script>
+</body>
+</html>

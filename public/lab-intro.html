@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NipTuck Labs – Bio Accelerator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #0cf; font-family: 'Share Tech Mono', monospace; }
+    .intro {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: 
+        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,60,80,0.15) 0%, transparent 50%),
+        linear-gradient(180deg, #030508 0%, #000 100%);
+      z-index: 1;
+    }
+    .intro.fade-out { opacity: 0; transition: opacity 0.8s ease-out; pointer-events: none; }
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      animation: gridPulse 4s ease-in-out infinite;
+    }
+    @keyframes gridPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+    .scan-line {
+      position: fixed;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(0,255,255,0.4), transparent);
+      animation: scanDown 3s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes scanDown { 0% { top: 0; } 100% { top: 100%; } }
+    .content {
+      text-align: center;
+      padding: 2rem;
+      max-width: 720px;
+      position: relative;
+      z-index: 2;
+    }
+    .lab-badge {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.4em;
+      color: rgba(0,200,255,0.7);
+      margin-bottom: 1rem;
+      animation: fadeIn 1s ease 0.5s both;
+    }
+    .title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.8rem, 6vw, 3.5rem);
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      color: #0cf;
+      text-shadow: 0 0 40px rgba(0,200,255,0.4);
+      margin-bottom: 0.25rem;
+      animation: fadeIn 1s ease 0.8s both;
+    }
+    .tagline {
+      font-size: 0.9rem;
+      color: rgba(0,200,255,0.6);
+      letter-spacing: 0.2em;
+      margin-bottom: 2rem;
+      animation: fadeIn 1s ease 1.1s both;
+    }
+    .tech-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin: 2rem 0;
+      animation: fadeIn 1s ease 1.5s both;
+    }
+    .tech-tag {
+      font-size: 0.7rem;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid rgba(0,200,255,0.3);
+      border-radius: 4px;
+      color: rgba(0,200,255,0.8);
+      background: rgba(0,80,120,0.1);
+    }
+    .tech-tag:nth-child(1) { animation: tagGlow 2s ease 2s infinite; }
+    .tech-tag:nth-child(2) { animation: tagGlow 2s ease 2.2s infinite; }
+    .tech-tag:nth-child(3) { animation: tagGlow 2s ease 2.4s infinite; }
+    .tech-tag:nth-child(4) { animation: tagGlow 2s ease 2.6s infinite; }
+    .tech-tag:nth-child(5) { animation: tagGlow 2s ease 2.8s infinite; }
+    .tech-tag:nth-child(6) { animation: tagGlow 2s ease 3s infinite; }
+    .tech-tag:nth-child(7) { animation: tagGlow 2s ease 3.2s infinite; }
+    .tech-tag:nth-child(8) { animation: tagGlow 2s ease 3.4s infinite; }
+    @keyframes tagGlow { 0%,100% { border-color: rgba(0,200,255,0.3); } 50% { border-color: rgba(0,255,255,0.6); } }
+    .bio-line {
+      font-size: 0.85rem;
+      color: rgba(0,200,255,0.5);
+      margin: 1.5rem 0;
+      line-height: 1.8;
+      animation: fadeIn 1s ease 1.8s both;
+    }
+    .enter-btn {
+      display: inline-block;
+      margin-top: 2rem;
+      padding: 1rem 2.5rem;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      background: transparent;
+      border: 2px solid #0cf;
+      color: #0cf;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      animation: fadeIn 1s ease 2.5s both;
+    }
+    .enter-btn:hover {
+      background: rgba(0,200,255,0.15);
+      box-shadow: 0 0 30px rgba(0,200,255,0.3);
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .corner {
+      position: fixed;
+      width: 60px;
+      height: 60px;
+      border: 1px solid rgba(0,200,255,0.2);
+      pointer-events: none;
+    }
+    .corner-tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+    .corner-tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+    .corner-bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+    .corner-br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+    .skip { position: fixed; top: 1rem; right: 1rem; font-size: 0.75rem; color: #666; text-decoration: none; z-index: 10; }
+    .skip:hover { color: #0cf; }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="scan-line"></div>
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+
+  <a href="/demo.html" class="skip">Skip intro</a>
+
+  <div class="intro" id="intro">
+    <div class="content">
+      <div class="lab-badge">NIPTUCK LABORATORIES</div>
+      <h1 class="title">BIO ACCELERATOR</h1>
+      <p class="tagline">BODY CONTOURING & PERFORMANCE ENHANCEMENT</p>
+
+      <div class="tech-strip">
+        <span class="tech-tag">VASER</span>
+        <span class="tech-tag">J-PLASMA</span>
+        <span class="tech-tag">EMSculpt</span>
+        <span class="tech-tag">CoolSculpting</span>
+        <span class="tech-tag">Biosome</span>
+        <span class="tech-tag">SGY-101</span>
+        <span class="tech-tag">Photobiomodulation</span>
+        <span class="tech-tag">3D Mapping</span>
+      </div>
+
+      <p class="bio-line">
+        Ultrasound-assisted lipolysis · RF skin tightening · HIFEM muscle sculpting ·<br>
+        Cryolipolysis · siRNA targeted fat reduction · Cellular repair accelerators
+      </p>
+
+      <a href="/demo.html" class="enter-btn" id="enterBtn">ENTER LAB</a>
+    </div>
+  </div>
+
+  <script>
+    const intro = document.getElementById('intro');
+    const enterBtn = document.getElementById('enterBtn');
+
+    enterBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      intro.classList.add('fade-out');
+      setTimeout(() => { window.location.href = '/demo.html'; }, 800);
+    });
+  </script>
+</body>
+</html>

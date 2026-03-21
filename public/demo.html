@@ -74,6 +74,35 @@
       border: 1px solid #2a4a4a;
     }
     .btn-mic.listening { background: #0a2a2a; border-color: #0aa; color: #0ff; }
+    .btn-video {
+      background: #1a2a2a;
+      color: #8cc;
+      border: 1px solid #2a4a4a;
+    }
+    .btn-video:hover:not(:disabled) { border-color: #0aa; color: #0ff; }
+    .btn-live {
+      background: #2a1515;
+      color: #f88;
+      border: 1px solid #4a2525;
+    }
+    .btn-live:hover:not(:disabled), .btn-live.live { background: #3a1515; border-color: #f44; color: #faa; }
+    .btn-live.live { box-shadow: 0 0 12px rgba(255,80,80,0.4); }
+    .livekit-wrap {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      background: #0a1515;
+      border: 1px solid #2a3535;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .livekit-status { color: #f44; font-weight: 600; }
+    .livekit-room { color: #8aa; font-size: 0.9rem; }
+    .btn-sm { padding: 0.5rem 1rem; font-size: 0.9rem; }
+    #docXVideo { max-width: 360px; width: 100%; border-radius: 10px; margin-top: 0.5rem; display: none; }
+    #docXVideo.show { display: block; }
     .status { margin-top: 0.75rem; padding: 0.6rem 1rem; border-radius: 8px; max-width: 720px; min-height: 1.5rem; font-size: 0.95rem; }
     .status.error { background: #2a1515; color: #f88; }
     .status.loading { background: #0a1a1a; color: #8af; }
@@ -91,23 +120,181 @@
     .card p, .card ul { margin: 0; color: #ccc; line-height: 1.5; font-size: 1rem; white-space: pre-wrap; }
     .card ul { padding-left: 1.25rem; }
     .card .attract { font-size: 1.3rem; color: #0aa; font-weight: 600; }
+    .lens-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      max-width: 720px;
+      width: 100%;
+      margin-top: 1rem;
+    }
+    .lens-panel {
+      background: #0a1215;
+      border: 1px solid #1a2a2a;
+      border-radius: 10px;
+      overflow: hidden;
+      aspect-ratio: 4/3;
+    }
+    .lens-panel canvas, .lens-panel .placeholder {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .lens-panel .placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #555;
+      font-size: 0.85rem;
+      padding: 1rem;
+    }
+    .lens-label { font-size: 0.75rem; color: #6aa; margin-bottom: 0.25rem; }
+    .lens-sliders { margin-top: 0.75rem; max-width: 720px; width: 100%; }
+    .lens-sliders label { display: block; font-size: 0.8rem; color: #888; margin-top: 0.5rem; }
+    .lens-sliders input[type="range"] { width: 100%; margin-top: 0.2rem; }
+    .scan-progress {
+      position: absolute;
+      bottom: 12px;
+      left: 20px;
+      right: 20px;
+      height: 4px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .scan-progress .bar {
+      height: 100%;
+      background: #0aa;
+      transition: width 0.1s;
+    }
+    .scenarios-wrap { max-width: 720px; width: 100%; margin-top: 1.5rem; }
+    .scenarios-wrap.loading { pointer-events: none; opacity: 0.7; }
+    .scenarios-title { font-size: 1rem; color: #6aa; margin: 0 0 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .scenarios-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; align-items: center; }
+    .scenario-mode { margin-left: auto; color: #6aa; font-size: 0.85rem; }
+    .scenario-mode label { cursor: pointer; margin-right: 0.75rem; }
+    .filter-btn { padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #1a2a2a; border: 1px solid #2a4a4a; border-radius: 6px; color: #8cc; cursor: pointer; }
+    .filter-btn:hover, .filter-btn.active { border-color: #0aa; color: #0ff; }
+    .scenarios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; }
+    .scenario-card {
+      background: #0a1215; border: 1px solid #1a2a2a; border-radius: 8px; padding: 0.75rem; cursor: pointer;
+      text-align: center; transition: all 0.2s;
+    }
+    .scenario-card:hover { border-color: #0aa; box-shadow: 0 0 12px rgba(0,170,170,0.2); }
+    .scenario-card:disabled { opacity: 0.5; cursor: not-allowed; }
+    .scenario-card .icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .scenario-card .name { font-size: 0.8rem; color: #8cc; }
+    .scenario-card .gen-mode { font-size: 0.7rem; color: #555; margin-top: 0.25rem; }
+    .scenarios-hint { font-size: 0.8rem; color: #666; margin-top: 0.75rem; }
+    .scenario-result { max-width: 720px; width: 100%; margin-top: 1rem; background: #0a1215; border: 1px solid #1a2a2a; border-radius: 10px; padding: 1rem; }
+    .scenario-result-label { font-size: 0.85rem; color: #6aa; margin-bottom: 0.5rem; }
+    .scenario-result-media img, .scenario-result-media video { max-width: 100%; border-radius: 8px; }
+    .vb-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; max-width: 720px; width: 100%; }
+    .vb-pills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .vb-pill {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.75rem;
+      background: #1a2a2a;
+      border: 1px solid #2a4a4a;
+      border-radius: 6px;
+      color: #8cc;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .vb-pill:hover, .vb-pill.active { border-color: #0aa; color: #0ff; }
   </style>
 </head>
 <body>
   <h1>NipTuck Demo</h1>
-  <p class="sub">Cosmetic scan · Ruthless assessment · <a href="/guide.html">Setup guide</a></p>
+  <p class="sub">Cosmetic scan · <a href="/lab-intro.html">Lab intro</a> · <a href="/stream-panel.html" target="_blank">Stream Panel</a> · <a href="/tutorial.html">Tutorial</a> · <a href="/demo-experience.html">Doc & Patient views</a> · <a href="/demo-mib.html">Big screen</a> · <a href="/guide.html">Setup</a> · <a href="/admin.html">Admin</a></p>
 
+  <div class="vb-row" style="margin-bottom:0.5rem;">
+    <span style="font-size:0.8rem;color:#6aa;margin-right:0.5rem;">Virtual background:</span>
+    <div class="vb-pills" id="vbPills">
+      <button class="vb-pill active" data-vb="none">None</button>
+      <button class="vb-pill" data-vb="blur">Blur</button>
+      <button class="vb-pill" data-vb="doctor">Doctor</button>
+      <button class="vb-pill" data-vb="beach">Beach</button>
+      <button class="vb-pill" data-vb="rooftop">Rooftop</button>
+      <button class="vb-pill" data-vb="spa">Spa</button>
+      <button class="vb-pill" data-vb="cafe">Cafe</button>
+      <button class="vb-pill" data-vb="clinic">Clinic</button>
+    </div>
+  </div>
   <div class="camera-wrap" id="cameraWrap">
     <video id="video" autoplay playsinline muted></video>
+    <canvas id="vbCanvas" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;"></canvas>
     <canvas id="scanOverlay" width="640" height="480"></canvas>
+    <div class="scan-progress" id="scanProgress" style="display:none">
+      <div class="bar" id="scanProgressBar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="lens-wrap" id="lensWrap" style="display:none">
+    <div>
+      <div class="lens-label">You now</div>
+      <div class="lens-panel">
+        <canvas id="lensLive"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="lens-label">Enhanced you</div>
+      <div class="lens-panel">
+        <div class="placeholder" id="lensEnhancedPlaceholder">Generate enhanced view</div>
+        <canvas id="lensEnhanced" style="display:none"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="lens-sliders" id="lensSliders" style="display:none">
+    <label>Body contour <input type="range" id="sliderBody" min="0" max="100" value="50"></label>
+    <label>Hair style <input type="range" id="sliderHair" min="0" max="100" value="50"></label>
+    <label>Hair color <input type="range" id="sliderHairColor" min="0" max="100" value="50"></label>
+    <button class="btn btn-video" id="genEnhancedBtn" style="margin-top:0.5rem">Generate enhanced view</button>
+  </div>
+
+  <div id="scenariosWrap" class="scenarios-wrap" style="display:none" data-filter="">
+    <h3 class="scenarios-title">See yourself in different scenarios</h3>
+    <div class="scenarios-filters">
+      <button class="filter-btn active" data-category="">All</button>
+      <button class="filter-btn" data-category="sports">Sports</button>
+      <button class="filter-btn" data-category="casual">Casual</button>
+      <button class="filter-btn" data-category="family">Family</button>
+      <button class="filter-btn" data-category="professional">Professional</button>
+      <button class="filter-btn" data-category="wellness">Wellness</button>
+      <button class="filter-btn" data-category="action">Action</button>
+      <button class="filter-btn" data-category="romance">Romance</button>
+      <span class="scenario-mode">
+        <label><input type="radio" name="scenarioMode" value="image" checked> Image</label>
+        <label><input type="radio" name="scenarioMode" value="video"> Video</label>
+      </span>
+    </div>
+    <div id="scenariosGrid" class="scenarios-grid"></div>
+    <p class="scenarios-hint">Or say it: "Put me at the beach" / "I want to look like Brad Pitt"</p>
+  </div>
+  <div id="scenarioResult" class="scenario-result" style="display:none">
+    <div class="scenario-result-label">Result</div>
+    <div class="scenario-result-media">
+      <img id="scenarioResultImg" style="display:none" alt="Generated">
+      <video id="scenarioResultVideo" style="display:none" controls playsinline></video>
+    </div>
   </div>
 
   <div class="controls">
     <button class="btn btn-scan" id="scanBtn" disabled>Start camera</button>
-    <button class="btn btn-mic" id="micBtn" disabled title="Ask a question (speak)">🎤 Ask</button>
+    <button class="btn btn-video" id="videoBtn" disabled title="Watch Doc X deliver your assessment">▶ Doc X video</button>
+    <button class="btn btn-mic" id="micBtn" disabled title="Discuss with Doc X (speak)">🎤 Discuss with Doc X</button>
+    <button class="btn btn-live" id="liveBtn" disabled title="Publish camera to LiveKit for recording/live consult">🔴 Go Live</button>
+  </div>
+  <div id="livekitWrap" class="livekit-wrap" style="display:none">
+    <div class="livekit-status">Live</div>
+    <div class="livekit-room" id="livekitRoom">Connected</div>
+    <button class="btn btn-video btn-sm" id="endLiveBtn">End Live</button>
   </div>
 
   <div id="status" class="status"></div>
+  <div id="docXVideoWrap" style="max-width:360px;width:100%;margin-top:0.5rem">
+    <video id="docXVideo" controls playsinline></video>
+  </div>
   <div id="results" class="results"></div>
 
   <script>
@@ -121,15 +308,31 @@
     const overlayCtx = overlay.getContext('2d');
 
     let lastAssessment = null;
+    let lastScanImage = null;
     let scanLineY = 0;
+    let currentVb = 'none';
+    let vbCanvas = null;
+    let vbSegmenter = null;
+    let vbBgImages = {};
+    const VB_BG_URLS = {
+      doctor: 'https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=720',
+      beach: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=720',
+      rooftop: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=720',
+      spa: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=720',
+      cafe: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=720',
+      clinic: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=720'
+    };
+    let scanAngle = 0;
     let scanAnim = null;
+    let scanProgressInterval = null;
+    let scanProgressVal = 0;
 
     function setStatus(msg, type = '') {
       status.textContent = msg;
       status.className = 'status ' + type;
     }
 
-    // MIB-style scan overlay
+    // Full scan overlay – horizontal + radial + progress
     function drawScan() {
       const w = overlay.width;
       const h = overlay.height;
@@ -149,20 +352,30 @@
       overlayCtx.moveTo(w - pad, h - pad); overlayCtx.lineTo(w - pad - br, h - pad); overlayCtx.moveTo(w - pad, h - pad); overlayCtx.lineTo(w - pad, h - pad - br);
       overlayCtx.stroke();
 
-      // Horizontal scan line
-      scanLineY = (scanLineY + 3) % (h + 40);
-      const y = scanLineY - 20;
-      const g = overlayCtx.createLinearGradient(0, y - 30, 0, y + 30);
+      // Horizontal sweep
+      scanLineY = (scanLineY + 4) % (h + 50);
+      const y = scanLineY - 25;
+      const g = overlayCtx.createLinearGradient(0, y - 40, 0, y + 40);
       g.addColorStop(0, 'transparent');
-      g.addColorStop(0.5, `rgba(0, 220, 220, ${0.4 + glow * 0.3})`);
+      g.addColorStop(0.5, `rgba(0, 220, 220, ${0.5 + glow * 0.3})`);
       g.addColorStop(1, 'transparent');
       overlayCtx.fillStyle = g;
-      overlayCtx.fillRect(0, y - 2, w, 4);
-      overlayCtx.strokeStyle = `rgba(0, 255, 255, ${0.6 + glow * 0.2})`;
+      overlayCtx.fillRect(0, y - 3, w, 6);
+      overlayCtx.strokeStyle = `rgba(0, 255, 255, ${0.7 + glow * 0.2})`;
       overlayCtx.lineWidth = 1;
       overlayCtx.beginPath();
       overlayCtx.moveTo(0, y);
       overlayCtx.lineTo(w, y);
+      overlayCtx.stroke();
+
+      // Radial sweep from center
+      scanAngle = (scanAngle + 0.04) % (Math.PI * 2);
+      const cx = w / 2, cy = h / 2;
+      overlayCtx.strokeStyle = `rgba(0, 200, 255, ${0.3 + 0.2 * Math.sin(t * 2)})`;
+      overlayCtx.lineWidth = 2;
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(cx, cy);
+      overlayCtx.lineTo(cx + Math.cos(scanAngle) * (w * 0.6), cy + Math.sin(scanAngle) * (h * 0.6));
       overlayCtx.stroke();
 
       // Grid
@@ -181,15 +394,28 @@
         overlayCtx.stroke();
       }
 
-      // "SCANNING" text
+      // "FULL SCAN" text
       overlayCtx.fillStyle = `rgba(0, 200, 200, ${0.5 + 0.2 * Math.sin(t * 3)})`;
-      overlayCtx.font = '14px monospace';
-      overlayCtx.fillText('SCANNING', w / 2 - 35, 30);
+      overlayCtx.font = 'bold 14px monospace';
+      overlayCtx.fillText('FULL SCAN', w / 2 - 40, 28);
+      if (scanProgressVal > 0) {
+        overlayCtx.fillStyle = 'rgba(0, 255, 200, 0.9)';
+        overlayCtx.font = '12px monospace';
+        overlayCtx.fillText(Math.round(scanProgressVal) + '%', w / 2 - 12, 44);
+      }
     }
 
     function startScanAnimation() {
       cameraWrap.classList.add('scan-active');
       scanLineY = 0;
+      scanAngle = 0;
+      scanProgressVal = 0;
+      document.getElementById('scanProgress').style.display = 'block';
+      document.getElementById('scanProgressBar').style.width = '0%';
+      scanProgressInterval = setInterval(() => {
+        scanProgressVal = Math.min(scanProgressVal + 2, 85);
+        document.getElementById('scanProgressBar').style.width = scanProgressVal + '%';
+      }, 200);
       function loop() {
         drawScan();
         scanAnim = requestAnimationFrame(loop);
@@ -200,6 +426,12 @@
     function stopScanAnimation() {
       if (scanAnim) cancelAnimationFrame(scanAnim);
       scanAnim = null;
+      if (scanProgressInterval) clearInterval(scanProgressInterval);
+      scanProgressInterval = null;
+      document.getElementById('scanProgressBar').style.width = '100%';
+      setTimeout(() => {
+        document.getElementById('scanProgress').style.display = 'none';
+      }, 300);
       cameraWrap.classList.remove('scan-active');
       overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
     }
@@ -214,10 +446,16 @@
         video.onloadedmetadata = () => {
           overlay.width = video.videoWidth;
           overlay.height = video.videoHeight;
+          vbCanvas = document.getElementById('vbCanvas');
+          if (vbCanvas) {
+            vbCanvas.width = video.videoWidth;
+            vbCanvas.height = video.videoHeight;
+          }
         };
         scanBtn.textContent = 'Scan me';
         scanBtn.disabled = false;
         micBtn.disabled = false;
+        document.getElementById('liveBtn').disabled = false;
         setStatus('Camera ready. Position yourself waist-up or full body, then Scan.', 'success');
       } catch (e) {
         setStatus('Camera denied: ' + e.message, 'error');
@@ -225,27 +463,292 @@
     }
 
     function captureFrame() {
+      const w = video.videoWidth, h = video.videoHeight;
       const c = document.createElement('canvas');
-      c.width = video.videoWidth;
-      c.height = video.videoHeight;
+      c.width = w;
+      c.height = h;
       const ctx = c.getContext('2d');
-      ctx.drawImage(video, 0, 0);
+      if (currentVb !== 'none' && vbCanvas) {
+        ctx.drawImage(vbCanvas, 0, 0, vbCanvas.width, vbCanvas.height, 0, 0, w, h);
+      } else {
+        ctx.drawImage(video, 0, 0);
+      }
       return c.toDataURL('image/jpeg', 0.9);
+    }
+
+    const videoBtn = document.getElementById('videoBtn');
+    const docXVideo = document.getElementById('docXVideo');
+
+    const lensWrap = document.getElementById('lensWrap');
+    const lensSliders = document.getElementById('lensSliders');
+    const lensLive = document.getElementById('lensLive');
+    const lensEnhanced = document.getElementById('lensEnhanced');
+    const lensEnhancedPlaceholder = document.getElementById('lensEnhancedPlaceholder');
+    const genEnhancedBtn = document.getElementById('genEnhancedBtn');
+
+    let scenariosList = [];
+    function renderScenarios(category) {
+      const list = category ? scenariosList.filter(s => s.category === category) : scenariosList;
+      const grid = document.getElementById('scenariosGrid');
+      grid.innerHTML = list.map(s => `
+        <div class="scenario-card" data-id="${s.id}" data-prompt="${(s.imagePrompt || '').replace(/"/g, '&quot;')}">
+          <div class="icon">${s.icon || '📷'}</div>
+          <div class="name">${s.name}</div>
+          <div class="gen-mode">Image</div>
+        </div>
+      `).join('');
+      grid.querySelectorAll('.scenario-card').forEach(card => {
+        card.addEventListener('click', () => {
+          if (document.getElementById('scenariosWrap')?.classList.contains('loading') || !lastScanImage) return;
+          const mode = document.querySelector('input[name="scenarioMode"]:checked')?.value || 'image';
+          runScenarioGen(card.dataset.id, null, mode);
+        });
+      });
+    }
+    async function runScenarioGen(scenarioId, customPrompt, type) {
+      document.getElementById('scenariosWrap')?.classList.add('loading');
+      setStatus(type === 'video' ? 'Generating video… (up to 2 min)' : 'Generating image…', 'loading');
+      document.getElementById('scenarioResult').style.display = 'none';
+      try {
+        if (type === 'video') {
+          const r = await fetch('/api/demo/img2vid', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: lastScanImage, scenarioId, prompt: customPrompt })
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || 'Video failed');
+          const vidEl = document.getElementById('scenarioResultVideo');
+          const imgEl = document.getElementById('scenarioResultImg');
+          imgEl.style.display = 'none';
+          vidEl.style.display = 'block';
+          vidEl.src = data.video_url;
+          document.getElementById('scenarioResult').style.display = 'block';
+          setStatus('Video ready.', 'success');
+        } else {
+          const r = await fetch('/api/demo/scenario-image', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: lastScanImage, scenarioId, customPrompt })
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || 'Image failed');
+          const imgEl = document.getElementById('scenarioResultImg');
+          const vidEl = document.getElementById('scenarioResultVideo');
+          vidEl.style.display = 'none';
+          imgEl.style.display = 'block';
+          imgEl.src = data.image;
+          document.getElementById('scenarioResult').style.display = 'block';
+          setStatus('Image ready.', 'success');
+        }
+      } catch (e) {
+        setStatus('Error: ' + e.message, 'error');
+      }
+      document.getElementById('scenariosWrap')?.classList.remove('loading');
+    }
+    async function handleVoiceGenerate(text) {
+      try {
+        const r = await fetch('/api/demo/voice-generate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const data = await r.json();
+        if (data.action === 'generate' && lastScanImage && (data.scenarioId || data.customPrompt)) {
+          runScenarioGen(data.scenarioId, data.customPrompt, data.type || 'image');
+          return true;
+        }
+      } catch (_) {}
+      return false;
     }
 
     function renderResults(data) {
       if (!data.personDetected || data.assessment?.startsWith?.('PERSON_NOT_DETECTED')) return;
       lastAssessment = data;
+      videoBtn.disabled = false;
+      docXVideo.classList.remove('show');
+      docXVideo.src = '';
+      lensWrap.style.display = 'grid';
+      lensSliders.style.display = 'block';
+      lensEnhancedPlaceholder.style.display = 'flex';
+      lensEnhanced.style.display = 'none';
+      document.getElementById('scenariosWrap').style.display = 'block';
+      document.getElementById('scenarioResult').style.display = 'none';
+      fetch('/api/demo/scenarios').then(r => r.json()).then(d => {
+        scenariosList = d.scenarios || [];
+        renderScenarios('');
+      });
       let html = '';
       if (data.attractiveness !== undefined) {
         html += `<div class="card"><h3>Attractiveness</h3><p class="attract">${data.attractiveness}/10</p><p>${data.attractivenessNote || ''}</p></div>`;
       }
       if (data.celebrities?.length) {
-        html += `<div class="card"><h3>Similar Looks</h3><ul><li>${data.celebrities.join('</li><li>')}</li></ul></div>`;
+        html += `<div class="card"><h3>Celebrity matches</h3><ul><li>${data.celebrities.join('</li><li>')}</li></ul></div>`;
+      }
+      if (data.recommendations?.length) {
+        html += `<div class="card"><h3>Recommendations (make you more attractive)</h3><ul><li>${data.recommendations.join('</li><li>')}</li></ul></div>`;
       }
       html += `<div class="card"><h3>Assessment</h3><p>${escapeHtml(data.assessment || '')}</p></div>`;
       results.innerHTML = html;
     }
+
+    function drawLensLive() {
+      if (!video.videoWidth || lensWrap.style.display === 'none') return;
+      const w = Math.min(360, video.videoWidth);
+      const h = Math.min(270, video.videoHeight);
+      if (lensLive.width !== w) lensLive.width = w;
+      if (lensLive.height !== h) lensLive.height = h;
+      const src = (currentVb !== 'none' && vbCanvas) ? vbCanvas : video;
+      lensLive.getContext('2d').drawImage(src, 0, 0, src.videoWidth || src.width, src.videoHeight || src.height, 0, 0, w, h);
+    }
+    setInterval(drawLensLive, 100);
+
+    let vbSegmenterReady = false;
+    async function loadVbSegmenter() {
+      if (vbSegmenterReady) return true;
+      try {
+        const { ImageSegmenter, FilesetResolver } = await import('https://esm.sh/@mediapipe/tasks-vision@0.10.14');
+        const vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+        vbSegmenter = await ImageSegmenter.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite' },
+          runningMode: 'VIDEO',
+          outputCategoryMask: true
+        });
+        vbSegmenterReady = true;
+        return true;
+      } catch (e) {
+        console.warn('VB segmentation load failed:', e);
+        return false;
+      }
+    }
+    const VB_GRADIENTS = {
+      doctor: ['#e8eef2', '#c4d0d9'],
+      beach: ['#87ceeb', '#f4e4bc'],
+      rooftop: ['#2c3e50', '#4a6fa5'],
+      spa: ['#d4c4b0', '#8b7355'],
+      cafe: ['#3e2723', '#5d4037'],
+      clinic: ['#eceff1', '#b0bec5']
+    };
+    function loadVbBg(id) {
+      if (vbBgImages[id]) return;
+      const url = VB_BG_URLS[id];
+      if (!url) return;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { vbBgImages[id] = img; };
+      img.onerror = () => { vbBgImages[id] = 'gradient'; };
+      img.src = url;
+    }
+    function drawVbGradient(ctx, w, h, id) {
+      const g = VB_GRADIENTS[id];
+      if (!g) return;
+      const gr = ctx.createLinearGradient(0, 0, w, h);
+      gr.addColorStop(0, g[0]);
+      gr.addColorStop(1, g[1]);
+      ctx.fillStyle = gr;
+      ctx.fillRect(0, 0, w, h);
+    }
+    Object.keys(VB_BG_URLS).forEach(loadVbBg);
+    let lastVbTime = -1;
+    function drawVbFrame() {
+      if (!vbCanvas || !video.videoWidth || currentVb === 'none') return;
+      const w = vbCanvas.width, h = vbCanvas.height;
+      const ctx = vbCanvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+      if (currentVb === 'blur') {
+        ctx.filter = 'blur(25px)';
+        ctx.drawImage(video, 0, 0, w, h);
+        ctx.filter = 'none';
+        ctx.globalCompositeOperation = 'destination-in';
+        const g = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w,h)*0.45);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.85, 'rgba(255,255,255,0.9)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(video, 0, 0, w, h);
+      } else if (vbSegmenterReady && vbSegmenter && vbBgImages[currentVb]) {
+        const bg = vbBgImages[currentVb];
+        if (typeof bg === 'object' && bg.width) {
+          ctx.drawImage(bg, 0, 0, bg.width, bg.height, 0, 0, w, h);
+        } else {
+          drawVbGradient(ctx, w, h, currentVb);
+        }
+        try {
+          const now = performance.now();
+          if (now - lastVbTime < 80) return;
+          lastVbTime = now;
+          const result = vbSegmenter.segmentForVideo(video, now);
+          const mask = result?.categoryMask;
+          if (mask) {
+            const maskCanvas = document.createElement('canvas');
+            maskCanvas.width = mask.width;
+            maskCanvas.height = mask.height;
+            const mCtx = maskCanvas.getContext('2d');
+            if (mask instanceof ImageData) {
+              mCtx.putImageData(mask, 0, 0);
+            } else if (typeof mask.getAsImageData === 'function') {
+              mCtx.putImageData(mask.getAsImageData(), 0, 0);
+            }
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.drawImage(maskCanvas, 0, 0, maskCanvas.width, maskCanvas.height, 0, 0, w, h);
+            ctx.restore();
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(video, 0, 0, w, h);
+          }
+        } catch (_) {}
+      } else if (vbBgImages[currentVb]) {
+        const bg = vbBgImages[currentVb];
+        if (typeof bg === 'object' && bg.width) {
+          ctx.drawImage(bg, 0, 0, w, h);
+        } else {
+          drawVbGradient(ctx, w, h, currentVb);
+        }
+        const pad = Math.min(w, h) * 0.12;
+        const vw = w - pad*2, vh = h - pad*2;
+        ctx.save();
+        ctx.beginPath();
+        const r = 16;
+        ctx.moveTo(pad + r, pad);
+        ctx.lineTo(pad + vw - r, pad);
+        ctx.quadraticCurveTo(pad + vw, pad, pad + vw, pad + r);
+        ctx.lineTo(pad + vw, pad + vh - r);
+        ctx.quadraticCurveTo(pad + vw, pad + vh, pad + vw - r, pad + vh);
+        ctx.lineTo(pad + r, pad + vh);
+        ctx.quadraticCurveTo(pad, pad + vh, pad, pad + vh - r);
+        ctx.lineTo(pad, pad + r);
+        ctx.quadraticCurveTo(pad, pad, pad + r, pad);
+        ctx.clip();
+        ctx.drawImage(video, 0, 0, w, h, pad, pad, vw, vh);
+        ctx.restore();
+      }
+    }
+    function vbLoop() {
+      if (currentVb !== 'none') {
+        drawVbFrame();
+      }
+      requestAnimationFrame(vbLoop);
+    }
+    vbLoop();
+    document.getElementById('vbPills')?.addEventListener('click', (e) => {
+      const pill = e.target.closest('.vb-pill');
+      if (!pill) return;
+      document.querySelectorAll('.vb-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentVb = pill.dataset.vb;
+      video.style.display = currentVb === 'none' ? 'block' : 'none';
+      vbCanvas.style.display = currentVb === 'none' ? 'none' : 'block';
+      if (currentVb !== 'none' && currentVb !== 'blur') {
+        loadVbSegmenter();
+      }
+    });
+
+    document.getElementById('scenariosWrap')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      document.querySelectorAll('.scenarios-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderScenarios(btn.dataset.category || '');
+    });
 
     function escapeHtml(s) {
       const d = document.createElement('div');
@@ -274,6 +777,7 @@
         } else if (!data.personDetected || data.assessment?.startsWith?.('PERSON_NOT_DETECTED')) {
           setStatus('No person detected. Position yourself clearly in frame.', 'error');
         } else {
+          lastScanImage = base64;
           setStatus('Scan complete.', 'success');
           renderResults(data);
           speak(data.assessment);
@@ -311,6 +815,11 @@
         micBtn.disabled = true;
         setStatus('You: ' + t, 'loading');
         try {
+          const handled = await handleVoiceGenerate(t);
+          if (handled) {
+            micBtn.disabled = false;
+            return;
+          }
           const r = await fetch('/api/demo/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -338,15 +847,181 @@
 
     micBtn.addEventListener('click', () => {
       if (!recognition || !lastAssessment) {
-        setStatus('Complete a scan first, then ask questions.', 'error');
+        setStatus('Complete a scan first, then discuss with Doc X.', 'error');
         return;
       }
       micBtn.classList.add('listening');
-      setStatus('Listening…', 'loading');
+      setStatus('Listening… Ask Doc X anything.', 'loading');
       recognition.start();
     });
 
+    videoBtn.addEventListener('click', async () => {
+      if (!lastAssessment?.assessment) return;
+      videoBtn.disabled = true;
+      setStatus('Generating Doc X video…', 'loading');
+      try {
+        const r = await fetch('/api/demo/heygen-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: [lastAssessment.attractiveness ? `${lastAssessment.attractiveness}/10. ` : '', lastAssessment.assessment].join('')
+          })
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          setStatus(data.error || 'Video failed', 'error');
+          videoBtn.disabled = false;
+          return;
+        }
+        const vid = data.video_id;
+        if (!vid) {
+          setStatus('No video ID returned', 'error');
+          videoBtn.disabled = false;
+          return;
+        }
+        const poll = async () => {
+          const sr = await fetch(`/api/demo/heygen-video/${vid}`);
+          const s = await sr.json();
+          if (s.video_url) {
+            docXVideo.src = s.video_url;
+            docXVideo.classList.add('show');
+            setStatus('Doc X video ready.', 'success');
+          } else if (s.status === 'failed') {
+            setStatus('Video generation failed.', 'error');
+          } else {
+            setTimeout(poll, 3000);
+            return;
+          }
+          videoBtn.disabled = false;
+        };
+        poll();
+      } catch (e) {
+        setStatus('Error: ' + e.message, 'error');
+        videoBtn.disabled = false;
+      }
+    });
+
+    const liveBtn = document.getElementById('liveBtn');
+    const livekitWrap = document.getElementById('livekitWrap');
+    const livekitRoom = document.getElementById('livekitRoom');
+    const endLiveBtn = document.getElementById('endLiveBtn');
+    let livekitRoomObj = null;
+
+    liveBtn.addEventListener('click', async () => {
+      if (!video.srcObject) return;
+      liveBtn.disabled = true;
+      setStatus('Connecting to LiveKit…', 'loading');
+      try {
+        const tokenRes = await fetch('/api/demo/livekit-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomName: 'niptuck-' + Date.now(), participantName: 'guest' })
+        });
+        const data = await tokenRes.json();
+        if (!tokenRes.ok) throw new Error(data.error || 'Token failed');
+        const { Room, LocalVideoTrack, LocalAudioTrack } = await import('https://esm.sh/livekit-client');
+        const room = new Room();
+        livekitRoomObj = room;
+        await room.connect(data.url, data.token);
+        const stream = video.srcObject;
+        const vTrack = stream.getVideoTracks()[0];
+        const aTrack = stream.getAudioTracks()[0];
+        if (vTrack) {
+          const localVideo = new LocalVideoTrack(vTrack, undefined, true);
+          await room.localParticipant.publishTrack(localVideo, { name: 'camera' });
+        }
+        if (aTrack) {
+          const localAudio = new LocalAudioTrack(aTrack, undefined, true);
+          await room.localParticipant.publishTrack(localAudio, { name: 'microphone' });
+        }
+        livekitWrap.style.display = 'flex';
+        livekitRoom.textContent = 'Room: ' + data.room;
+        liveBtn.classList.add('live');
+        liveBtn.textContent = '🔴 Live';
+        setStatus('Live! Camera & mic published to LiveKit.', 'success');
+      } catch (e) {
+        setStatus('LiveKit: ' + e.message, 'error');
+        liveBtn.disabled = false;
+      }
+    });
+
+    endLiveBtn.addEventListener('click', async () => {
+      if (livekitRoomObj) {
+        livekitRoomObj.disconnect();
+        livekitRoomObj = null;
+      }
+      livekitWrap.style.display = 'none';
+      liveBtn.classList.remove('live');
+      liveBtn.textContent = '🔴 Go Live';
+      liveBtn.disabled = false;
+      setStatus('Ended live session.', 'success');
+    });
+
+    genEnhancedBtn.addEventListener('click', async () => {
+      if (!lastScanImage) {
+        setStatus('Complete a scan first.', 'error');
+        return;
+      }
+      genEnhancedBtn.disabled = true;
+      lensEnhancedPlaceholder.textContent = 'Generating…';
+      lensEnhancedPlaceholder.style.display = 'flex';
+      lensEnhanced.style.display = 'none';
+      setStatus('Generating enhanced view… (15–30 sec)', 'loading');
+      const bodyVal = parseInt(document.getElementById('sliderBody').value, 10);
+      const hairVal = parseInt(document.getElementById('sliderHair').value, 10);
+      const colorVal = parseInt(document.getElementById('sliderHairColor').value, 10);
+      const hairStyles = ['relaxed casual', 'styled polished', 'elegant formal'];
+      const hairColors = ['darker natural', 'natural tone', 'lighter highlights'];
+      const hairStyle = hairStyles[Math.min(2, Math.floor((hairVal / 100) * 3))];
+      const hairColor = hairColors[Math.min(2, Math.floor((colorVal / 100) * 3))];
+      try {
+        const r = await fetch('/api/demo/enhanced-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: lastScanImage,
+            bodyLevel: bodyVal,
+            hairStyle,
+            hairColor,
+            recommendations: lastAssessment?.recommendations || []
+          })
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          setStatus(data.error || 'Enhanced image failed', 'error');
+          lensEnhancedPlaceholder.textContent = 'Generate enhanced view';
+        } else if (data.image) {
+          const img = new Image();
+          img.onload = () => {
+            const c = lensEnhanced;
+            c.width = img.width;
+            c.height = img.height;
+            c.getContext('2d').drawImage(img, 0, 0);
+            lensEnhancedPlaceholder.style.display = 'none';
+            lensEnhanced.style.display = 'block';
+            setStatus('Enhanced view ready.', 'success');
+          };
+          img.src = data.image;
+        }
+      } catch (e) {
+        setStatus('Error: ' + e.message, 'error');
+        lensEnhancedPlaceholder.textContent = 'Generate enhanced view';
+      }
+      genEnhancedBtn.disabled = false;
+    });
+
     if (window.speechSynthesis) speechSynthesis.getVoices();
+
+    const streamChannel = new BroadcastChannel('niptuck-stream');
+    streamChannel.onmessage = (e) => {
+      const { action, scenarioId, type } = e.data || {};
+      if (action === 'scan') scanBtn.click();
+      else if (action === 'docXVideo') videoBtn.click();
+      else if (action === 'goLive') liveBtn.click();
+      else if (action === 'mic') micBtn.click();
+      else if (action === 'scenario' && scenarioId && lastScanImage) runScenarioGen(scenarioId, null, type || 'image');
+    };
+
     startCamera();
   </script>
 </body>
