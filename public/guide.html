@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NipTuck Demo – Setup Guide</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(180deg, #0a0a0f 0%, #12121c 100%);
+      color: #e8e8e8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    .wrap { max-width: 680px; width: 100%; }
+    h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); margin: 0 0 0.5rem; }
+    .tag { color: #c44; font-size: 0.9rem; margin-bottom: 2rem; }
+    .step {
+      background: #15151f;
+      border-radius: 16px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid #252535;
+      opacity: 0.6;
+      transition: opacity 0.3s, border-color 0.3s;
+    }
+    .step.active { opacity: 1; border-color: #c44; }
+    .step.done { opacity: 1; border-color: #2a4; }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 50%;
+      background: #252535;
+      font-weight: 700;
+      font-size: 1rem;
+      margin-right: 0.75rem;
+    }
+    .step.active .step-num { background: #c44; }
+    .step.done .step-num { background: #2a4; }
+    .step h2 { display: inline-block; margin: 0; font-size: 1.25rem; }
+    .step p { margin: 0.75rem 0 0; color: #aaa; line-height: 1.5; }
+    .step ul { margin: 0.5rem 0 0; padding-left: 1.25rem; color: #aaa; }
+    .ctr {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { transform: scale(1.02); }
+    .btn-primary {
+      background: linear-gradient(135deg, #c44, #a22);
+      color: white;
+      box-shadow: 0 4px 16px rgba(200,68,68,0.3);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 24px rgba(200,68,68,0.4); }
+    .btn-secondary {
+      background: #252535;
+      color: #e8e8e8;
+    }
+    .start-demo {
+      margin-top: 2.5rem;
+      padding: 1.25rem 2.5rem;
+      font-size: 1.3rem;
+    }
+    .progress {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #252535;
+      transition: background 0.3s;
+    }
+    .dot.active { background: #c44; }
+    .dot.done { background: #2a4; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>NipTuck Demo</h1>
+    <p class="tag">Interactive setup guide – follow the steps below</p>
+
+    <div class="progress" id="progress"></div>
+
+    <div class="step active" data-step="0">
+      <span class="step-num">1</span><h2>Welcome</h2>
+      <p>This demo scans you with the camera and gives a <strong>blunt, honest cosmetic assessment</strong> – like a comedian consultant. No filters, no sugarcoating.</p>
+    </div>
+
+    <div class="step" data-step="1">
+      <span class="step-num">2</span><h2>Equipment</h2>
+      <p>You need:</p>
+      <ul>
+        <li>A webcam (e.g. Logitech MX Brio) or built-in camera</li>
+        <li>Good lighting – face and upper body clearly visible</li>
+        <li>Browser permission for camera access when prompted</li>
+      </ul>
+    </div>
+
+    <div class="step" data-step="2">
+      <span class="step-num">3</span><h2>Positioning</h2>
+      <p>Stand or sit so the camera sees you clearly:</p>
+      <ul>
+        <li><strong>Waist up</strong> – face, neck, shoulders visible</li>
+        <li>Or <strong>full body</strong> – head to feet in frame</li>
+        <li>Face the camera directly – no profile or blocked face</li>
+      </ul>
+    </div>
+
+    <div class="step" data-step="3">
+      <span class="step-num">4</span><h2>Scan</h2>
+      <p>When the demo starts, a sci‑fi style scan overlay appears on the camera. Position yourself in frame, click <strong>Scan me</strong>. You’ll get an attractiveness score, celebrity lookalikes, and a blunt cosmetic assessment – spoken aloud.</p>
+    </div>
+
+    <div class="step" data-step="4">
+      <span class="step-num">5</span><h2>Ask questions</h2>
+      <p>After the scan, use <strong>Ask</strong> to speak. The AI will listen, transcribe, and reply out loud. You can ask about procedures, improvements, or anything else.</p>
+    </div>
+
+    <div class="step" data-step="5">
+      <span class="step-num">6</span><h2>Ready?</h2>
+      <p>Click <strong>Start Demo</strong> below to begin. You can return to this guide anytime.</p>
+    </div>
+
+    <div class="ctr">
+      <button class="btn btn-secondary" id="prevBtn" disabled>← Back</button>
+      <button class="btn btn-primary" id="nextBtn">Next →</button>
+    </div>
+
+    <div class="ctr" id="startRow" style="display: none;">
+      <a href="/demo.html" class="btn btn-primary start-demo">Start Demo</a>
+    </div>
+  </div>
+
+  <script>
+    const steps = document.querySelectorAll('.step');
+    const progress = document.getElementById('progress');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const startRow = document.getElementById('startRow');
+    let cur = 0;
+
+    function renderDots() {
+      progress.innerHTML = steps.length ? '' : '';
+      steps.forEach((_, i) => {
+        const d = document.createElement('div');
+        d.className = 'dot' + (i < cur ? ' done' : i === cur ? ' active' : '');
+        progress.appendChild(d);
+      });
+    }
+
+    function update() {
+      steps.forEach((s, i) => {
+        s.classList.remove('active', 'done');
+        if (i < cur) s.classList.add('done');
+        else if (i === cur) s.classList.add('active');
+      });
+      steps[cur]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      prevBtn.disabled = cur === 0;
+      nextBtn.textContent = cur === steps.length - 1 ? 'Done' : 'Next →';
+      nextBtn.style.display = cur === steps.length - 1 ? 'none' : '';
+      startRow.style.display = cur === steps.length - 1 ? 'flex' : 'none';
+      renderDots();
+    }
+
+    prevBtn.addEventListener('click', () => { cur = Math.max(0, cur - 1); update(); });
+    nextBtn.addEventListener('click', () => {
+      if (cur < steps.length - 1) { cur++; update(); }
+    });
+
+    update();
+  </script>
+</body>
+</html>

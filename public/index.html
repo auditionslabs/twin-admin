@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NipTuck – Twin Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0a0f;
+      color: #e8e8e8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    h1 { font-size: clamp(1.5rem, 4vw, 2.25rem); margin-bottom: 0.5rem; }
+    .sub { color: #888; margin-bottom: 2rem; }
+    .cards {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    a.card {
+      display: block;
+      padding: 1.5rem 2rem;
+      background: #15151f;
+      border: 1px solid #252535;
+      border-radius: 12px;
+      color: #e8e8e8;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    a.card:hover { border-color: #c44; transform: scale(1.02); }
+    a.card.primary { background: linear-gradient(135deg, #1a1518, #15151f); border-color: #c44; }
+    .foot { margin-top: 2rem; color: #555; font-size: 0.85rem; }
+    .foot a { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>NipTuck</h1>
+  <p class="sub">Twin Admin – SurgiTwin & GlowMorph</p>
+  <div class="cards">
+    <a href="/guide.html" class="card primary">Start – Setup Guide</a>
+    <a href="/demo.html" class="card">Demo – Cosmetic Scan</a>
+  </div>
+  <p class="foot"><a href="/api/health">API</a></p>
+</body>
+</html>
