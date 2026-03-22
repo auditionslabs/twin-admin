@@ -284,6 +284,7 @@
     <button class="btn btn-video" id="videoBtn" disabled title="Watch Doc X deliver your assessment">▶ Doc X video</button>
     <button class="btn btn-mic" id="micBtn" disabled title="Discuss with Doc X (speak)">🎤 Discuss with Doc X</button>
     <button class="btn btn-live" id="liveBtn" disabled title="Publish camera to LiveKit for recording/live consult">🔴 Go Live</button>
+    <a href="/cyberworker.html" class="btn btn-sm" style="text-decoration:none" title="Cyber Worker – Interactive avatar video call">Cyber Worker</a>
   </div>
   <div id="livekitWrap" class="livekit-wrap" style="display:none">
     <div class="livekit-status">Live</div>
@@ -790,16 +791,34 @@
       }
     });
 
-    function speak(text) {
-      if (!window.speechSynthesis || !text) return;
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text.slice(0, 500));
-      u.rate = 0.95;
-      u.pitch = 1;
-      const voices = speechSynthesis.getVoices();
-      const en = voices.find(v => v.lang.startsWith('en'));
-      if (en) u.voice = en;
-      speechSynthesis.speak(u);
+    async function speak(text) {
+      if (!text) return;
+      const truncated = text.slice(0, 2500);
+      try {
+        const r = await fetch('/api/demo/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: truncated })
+        });
+        if (r.ok) {
+          const blob = await r.blob();
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.onended = () => URL.revokeObjectURL(url);
+          await audio.play();
+          return;
+        }
+      } catch (_) {}
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text.slice(0, 500));
+        u.rate = 0.95;
+        u.pitch = 1;
+        const voices = speechSynthesis.getVoices();
+        const en = voices.find(v => v.lang.startsWith('en'));
+        if (en) u.voice = en;
+        speechSynthesis.speak(u);
+      }
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
