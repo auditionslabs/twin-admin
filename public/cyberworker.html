@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cyber Worker – Virtual Visit & Avatar</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f0f12 0%, #1a1a24 50%, #0f0f12 100%);
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 { font-size: clamp(1.5rem, 4vw, 2.25rem); margin-bottom: 0.25rem; }
+    .sub { color: #888; margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .card {
+      padding: 1.25rem;
+      background: rgba(20, 20, 28, 0.8);
+      border: 1px solid #2a2a35;
+      border-radius: 12px;
+      text-decoration: none;
+      color: #e8e8e8;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .card:hover { border-color: #0af; transform: scale(1.02); }
+    .card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+    .card p { margin: 0; font-size: 0.85rem; color: #888; }
+    .section { margin-bottom: 2.5rem; }
+    .section h2 { font-size: 1.1rem; color: #6aa; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 1.25rem;
+      background: linear-gradient(135deg, #0af, #08c);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn.secondary { background: #2a3a4a; }
+    .btn.secondary:hover { background: #3a4a5a; }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.95);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .modal.show { display: flex; }
+    .modal-inner {
+      width: 95vw;
+      height: 90vh;
+      max-width: 960px;
+      background: #0f0f12;
+      border: 1px solid #2a2a35;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 1rem 1.25rem;
+      background: #15151f;
+      border-bottom: 1px solid #2a2a35;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body { flex: 1; position: relative; background: #000; }
+    .modal-body video { width: 100%; height: 100%; object-fit: cover; }
+    .modal-body .placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #666;
+    }
+    .modal-body .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid #2a2a35;
+      border-top-color: #0af;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .modal-body .error { color: #f66; }
+    .modal-footer {
+      padding: 1rem;
+      background: #15151f;
+      border-top: 1px solid #2a2a35;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .foot { margin-top: 2rem; color: #555; font-size: 0.85rem; }
+    .foot a { color: #0af; }
+  </style>
+</head>
+<body>
+  <h1>Cyber Worker</h1>
+  <p class="sub">Virtual visit, avatar video calls, Doc X – formerly CyberMuse</p>
+
+  <div class="section">
+    <h2>Apps</h2>
+    <div class="grid">
+      <a href="/demo.html" class="card">
+        <h3>Demo</h3>
+        <p>Cosmetic scan, Doc X assessment, chat, scenarios</p>
+      </a>
+      <a href="/motionmuse.html" class="card">
+        <h3>MotionMuse</h3>
+        <p>Upload image → pick motion template → get video</p>
+      </a>
+      <a href="/demo-experience.html" class="card">
+        <h3>Experience</h3>
+        <p>Doc & patient views</p>
+      </a>
+      <a href="/index.html" class="card">
+        <h3>NipTuck Home</h3>
+        <p>All demos</p>
+      </a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Virtual Visit – Talk to Doc X</h2>
+    <p style="margin-bottom: 1rem; color: #aaa;">Interactive avatar or pre-recorded assessment video.</p>
+    <button class="btn" id="btnHeyGen">HeyGen – Interactive Avatar</button>
+    <button class="btn secondary" id="btnLipSync">Lip Sync – Static Image + Voice</button>
+    <a href="/demo.html" class="btn secondary">Demo → Pre-recorded Doc X</a>
+  </div>
+
+  <div id="videoModal" class="modal">
+    <div class="modal-inner">
+      <div class="modal-header">
+        <span id="modalTitle">Video Call</span>
+        <button class="btn secondary" id="closeModal">✕ Close</button>
+      </div>
+      <div class="modal-body">
+        <div id="videoPlaceholder" class="placeholder">
+          <div class="spinner"></div>
+          <p id="placeholderText">Connecting…</p>
+        </div>
+        <video id="avatarVideo" autoplay playsInline controls style="display:none"></video>
+      </div>
+      <div class="modal-footer" id="modalFooter" style="display:none">
+        <button class="btn" id="btnEndCall">End Call</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot"><a href="/api/health">API</a> · <a href="/index.html">NipTuck</a></p>
+
+  <script>
+    const modal = document.getElementById('videoModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const placeholder = document.getElementById('videoPlaceholder');
+    const placeholderText = document.getElementById('placeholderText');
+    const avatarVideo = document.getElementById('avatarVideo');
+    const modalFooter = document.getElementById('modalFooter');
+
+    function showModal(title) {
+      modalTitle.textContent = title;
+      placeholder.style.display = 'flex';
+      placeholderText.textContent = 'Connecting…';
+      avatarVideo.style.display = 'none';
+      avatarVideo.srcObject = null;
+      avatarVideo.src = '';
+      modalFooter.style.display = 'none';
+      modal.classList.add('show');
+    }
+
+    function hideModal() {
+      modal.classList.remove('show');
+      if (window._heygenAvatar) {
+        try { window._heygenAvatar.stopAvatar(); } catch (_) {}
+        window._heygenAvatar = null;
+      }
+    }
+
+    document.getElementById('closeModal').addEventListener('click', hideModal);
+    document.getElementById('btnEndCall').addEventListener('click', hideModal);
+
+    document.getElementById('btnHeyGen').addEventListener('click', async () => {
+      showModal('HeyGen – Doc X');
+      try {
+        const authRes = await fetch('/api/heygen/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationId: 'cyber_' + Date.now(), userName: 'there' })
+        });
+        const auth = await authRes.json();
+        if (auth.error) throw new Error(auth.error);
+
+        const mod = await import('https://esm.sh/@heygen/streaming-avatar@2.1.0');
+        const StreamingAvatar = mod.default || mod.StreamingAvatar || mod;
+        const { StreamingEvents, AvatarQuality } = mod;
+
+        const avatar = new StreamingAvatar({ token: auth.apiToken || auth.apiKey });
+        window._heygenAvatar = avatar;
+
+        avatar.on(StreamingEvents.STREAM_READY, () => {
+          if (avatar.mediaStream && avatarVideo) {
+            avatarVideo.srcObject = avatar.mediaStream;
+            avatarVideo.style.display = 'block';
+            placeholder.style.display = 'none';
+            modalFooter.style.display = 'flex';
+          }
+        });
+
+        avatar.on(StreamingEvents.STREAM_DISCONNECTED, (e) => {
+          placeholderText.textContent = e?.message || 'Disconnected';
+          placeholder.classList.add('error');
+        });
+
+        await avatar.createStartAvatar({
+          avatarName: auth.avatarId,
+          quality: AvatarQuality.High,
+          voice: { voiceId: 'default', rate: 1.0 },
+          language: 'en-US',
+        });
+
+        setTimeout(() => avatar.speak({ text: 'Hello. I am Doc X, your cyber worker. How can I help you today?' }), 1500);
+      } catch (err) {
+        placeholderText.textContent = err.message || 'HeyGen unavailable. Add HEYGEN_API_KEY and HEYGEN_API_TOKEN.';
+        placeholder.classList.add('error');
+      }
+    });
+
+    document.getElementById('btnLipSync').addEventListener('click', async () => {
+      showModal('Lip Sync – Doc X');
+      const defaultText = 'Hello. I am Doc X, your cyber worker. This is an open-source lip-sync avatar—a static image animated with AI. How can I help you today?';
+      const text = prompt('What should Doc X say?', defaultText) || defaultText;
+      placeholderText.textContent = 'Generating (TTS + SadTalker ~20s)…';
+
+      try {
+        const res = await fetch('/api/demo/lip-sync-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text.slice(0, 1500) })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || res.statusText);
+
+        if (data.video_url) {
+          avatarVideo.src = data.video_url;
+          avatarVideo.style.display = 'block';
+          placeholder.style.display = 'none';
+          modalFooter.style.display = 'flex';
+          avatarVideo.onerror = () => {
+            placeholderText.textContent = 'Video failed to load';
+            placeholder.style.display = 'flex';
+          };
+        } else {
+          throw new Error('No video URL returned');
+        }
+      } catch (err) {
+        placeholderText.textContent = err.message || 'Lip sync failed. Need REPLICATE_API_TOKEN + ELEVENLABS_API_KEY.';
+        placeholder.classList.add('error');
+      }
+    });
+  </script>
+</body>
+</html>

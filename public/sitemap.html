@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sitemap – NipTuck | Everything Available</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0a0f;
+      color: #e8e8e8;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 { font-size: clamp(1.5rem, 4vw, 2rem); margin-bottom: 0.25rem; }
+    .sub { color: #888; margin-bottom: 1.5rem; font-size: 0.95rem; }
+    h2 {
+      font-size: 1rem;
+      color: #c44;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 2rem 0 0.75rem;
+      border-bottom: 1px solid #252535;
+      padding-bottom: 0.5rem;
+    }
+    h2:first-of-type { margin-top: 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.75rem;
+    }
+    a.card {
+      display: block;
+      padding: 1rem 1.25rem;
+      background: #15151f;
+      border: 1px solid #252535;
+      border-radius: 10px;
+      color: #e8e8e8;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: border-color 0.2s, transform 0.1s;
+    }
+    a.card:hover { border-color: #c44; transform: scale(1.01); }
+    a.card span { color: #666; font-size: 0.8rem; font-weight: 400; display: block; margin-top: 0.35rem; }
+    .foot {
+      margin-top: 2.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #252535;
+      color: #555;
+      font-size: 0.85rem;
+    }
+    .foot a { color: #888; }
+    .url { font-family: ui-monospace, monospace; font-size: 0.75rem; color: #555; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Sitemap – NipTuck</h1>
+  <p class="sub">Everything available. One link: <strong><a href="/sitemap.html" style="color:#c44">niptuck.backoffice.cam/sitemap.html</a></strong></p>
+
+  <h2>Screens & Demos</h2>
+  <div class="grid">
+    <a href="/" class="card">Home <span>Landing with links</span></a>
+    <a href="/lab-intro.html" class="card">Lab Intro <span>Bio Accelerator intro</span></a>
+    <a href="/guide.html" class="card">Setup Guide <span>Onboarding steps</span></a>
+    <a href="/demo.html" class="card">Demo – Cosmetic Scan <span>Scan, Doc X, chat, scenarios</span></a>
+    <a href="/cyberworker.html" class="card">Cyber Worker <span>HeyGen & Lip Sync avatars</span></a>
+    <a href="/motionmuse.html" class="card">MotionMuse <span>Image → video</span></a>
+    <a href="/demo-experience.html" class="card">Experience <span>Doc & Patient views</span></a>
+    <a href="/demo-mib.html" class="card">Big Screen Demo <span>MIB style presentation</span></a>
+    <a href="/tutorial.html" class="card">Full Tutorial <span>Step-by-step walkthrough</span></a>
+    <a href="/stream-panel.html" class="card">Stream Panel <span>OBS/MPC pads</span></a>
+  </div>
+
+  <h2>Admin & Invite</h2>
+  <div class="grid">
+    <a href="/admin.html" class="card">Admin Panel <span>Users, patients, analytics</span></a>
+    <a href="/invite.html" class="card">Invite <span>Patient invite flow (?token=)</span></a>
+  </div>
+
+  <h2>API</h2>
+  <div class="grid">
+    <a href="/api/health" class="card">Health <span>Service status</span></a>
+  </div>
+
+  <p class="foot">
+    <a href="/">← Home</a>
+    &nbsp; · &nbsp;
+    <span class="url">https://niptuck.backoffice.cam/sitemap.html</span>
+  </p>
+</body>
+</html>

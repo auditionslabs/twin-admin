@@ -4,6 +4,13 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 require('dotenv').config({ path: path.join(__dirname, '../devops/.env') });
 
+const credits = require('./lib/credits');
+
+// Resolve tenant from request (X-Tenant-Id header or body.tenantId)
+function getTenantId(req) {
+  return req.headers['x-tenant-id'] || req.body?.tenantId || req.query?.tenantId || 'default';
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -37,6 +44,44 @@ app.get('/api/demo/motion-templates', (req, res) => {
 
 app.get('/api/licenses/validate', (req, res) => {
   res.status(501).json({ error: 'License validation not implemented yet' });
+});
+
+// -----------------------------------------------------------------------------
+// Stars / Wallet / Usage API (Telegram Stars–style digital currency)
+// -----------------------------------------------------------------------------
+
+app.get('/api/stars/balance', (req, res) => {
+  const tenantId = getTenantId(req);
+  const wallet = credits.getOrCreateWallet(tenantId);
+  res.json({
+    tenant_id: tenantId,
+    balance: wallet.balance,
+    star_to_usd: credits.STAR_TO_USD,
+  });
+});
+
+app.get('/api/stars/usage', (req, res) => {
+  const tenantId = req.query.tenantId || 'default';
+  const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+  const entries = credits.readUsageLog(tenantId, limit);
+  res.json({ entries });
+});
+
+app.get('/api/stars/summary', (req, res) => {
+  const tenantId = req.query.tenantId || 'default';
+  const since = req.query.since || null;
+  const summary = credits.getUsageSummary(tenantId, since);
+  res.json(summary);
+});
+
+app.post('/api/stars/add', (req, res) => {
+  const tenantId = getTenantId(req);
+  const { amount, reason } = req.body;
+  if (typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ error: 'amount must be a positive number' });
+  }
+  const balance = credits.addStars(tenantId, amount, reason || '');
+  res.json({ balance, added: amount });
 });
 
 // Demo: cosmetic scan – ruthless assessment, attractiveness, celebrity lookalikes
@@ -94,6 +139,22 @@ Be honest. For celebrities, think face shape, features, bone structure. Recommen
     if (celebs) data.celebrities = celebs[1].split(/[,;]|\band\b/i).map(s => s.trim()).filter(Boolean);
     if (recs) data.recommendations = recs[1].replace(/\d+\.\s/g, '\n').split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
     if (assess) data.assessment = assess[1].trim();
+
+    const usage = completion.usage || {};
+    const costUsd = credits.computeCost('openai', 'gpt-4o', {
+      input_tokens: usage.prompt_tokens,
+      output_tokens: usage.completion_tokens,
+    });
+    const charge = credits.chargeAndLog(getTenantId(req), {
+      provider: 'openai',
+      model: 'gpt-4o',
+      route: '/api/demo/analyze',
+      cost_usd: costUsd,
+      tokens_in: usage.prompt_tokens,
+      tokens_out: usage.completion_tokens,
+    });
+    if (!charge.ok) return res.status(402).json({ error: charge.error, balance: charge.balance });
+    data._stars = { balance: charge.balance, charged: charge.stars_charged };
     res.json(data);
   } catch (err) {
     console.error('Demo analyze error:', err.message);
@@ -122,7 +183,21 @@ app.post('/api/demo/chat', async (req, res) => {
       max_tokens: 200
     });
     const reply = completion.choices[0]?.message?.content?.trim() || "I didn't catch that.";
-    res.json({ reply });
+    const usage = completion.usage || {};
+    const costUsd = credits.computeCost('openai', 'gpt-4o', {
+      input_tokens: usage.prompt_tokens,
+      output_tokens: usage.completion_tokens,
+    });
+    const charge = credits.chargeAndLog(getTenantId(req), {
+      provider: 'openai',
+      model: 'gpt-4o',
+      route: '/api/demo/chat',
+      cost_usd: costUsd,
+      tokens_in: usage.prompt_tokens,
+      tokens_out: usage.completion_tokens,
+    });
+    if (!charge.ok) return res.status(402).json({ error: charge.error, balance: charge.balance });
+    res.json({ reply, _stars: { balance: charge.balance, charged: charge.stars_charged } });
   } catch (err) {
     console.error('Demo chat error:', err.message);
     res.status(500).json({ error: err.message || 'Chat failed' });
@@ -186,6 +261,71 @@ app.get('/api/demo/heygen-video/:id', async (req, res) => {
     status: data.status || 'unknown',
     video_url: data.video_url || null,
   });
+});
+
+// HeyGen Streaming – interactive avatar session (Cyber Worker)
+app.post('/api/heygen/auth', async (req, res) => {
+  const apiKey = process.env.HEYGEN_API_KEY;
+  const apiToken = process.env.HEYGEN_API_TOKEN || apiKey;
+  const avatarId = process.env.HEYGEN_AVATAR_ID || process.env.MC_HEYGEN_1 || 'Josh';
+
+  if (!apiKey) {
+    return res.status(503).json({ error: 'HEYGEN_API_KEY not configured' });
+  }
+
+  const { avatarId: bodyAvatarId, conversationId, userName } = req.body || {};
+  const targetAvatarId = bodyAvatarId || avatarId;
+  const sessionId = conversationId || `heygen_${Date.now()}`;
+
+  try {
+    const heygenRes = await fetch('https://api.heygen.com/v1/streaming.create', {
+      method: 'POST',
+      headers: {
+        'X-Api-Key': apiKey,
+        'Authorization': `Bearer ${apiToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        avatar_id: targetAvatarId,
+        session_id: sessionId,
+        ...(userName && { user_name: userName }),
+      }),
+    });
+
+    const sessionData = await heygenRes.json().catch(() => ({}));
+
+    if (!heygenRes.ok) {
+      return res.json({
+        avatarId: targetAvatarId,
+        sessionId,
+        apiKey,
+        apiToken,
+        userName: userName || 'there',
+        warning: 'HeyGen API call failed, using fallback mode',
+      });
+    }
+
+    res.json({
+      avatarId: targetAvatarId,
+      sessionId: sessionData.session_id || sessionId,
+      apiKey,
+      apiToken,
+      userName: userName || 'there',
+      sdp: sessionData.sdp,
+      iceServers: sessionData.ice_servers || [],
+      ...sessionData,
+    });
+  } catch (err) {
+    console.error('HeyGen streaming auth error:', err.message);
+    res.json({
+      avatarId: targetAvatarId,
+      sessionId,
+      apiKey,
+      apiToken,
+      userName: userName || 'there',
+      warning: 'HeyGen API unavailable',
+    });
+  }
 });
 
 // Replicate (REPLICATE_API_TOKEN or REPLICATE_API)
@@ -415,6 +555,143 @@ app.post('/api/demo/img2vid', async (req, res) => {
   return res.status(503).json({ error: 'FAL_AI_KEY or REPLICATE_API_TOKEN required for video' });
 });
 
+// Lip-sync video – open source (SadTalker via Replicate). Static image + TTS → talking head.
+const DEFAULT_AVATAR_IMAGE = 'https://replicate.delivery/pbxt/Jf1gcsODejVsGRd42eeUj0RXX11zjxzHuLuqXmVFwMAi2tZq/art_1.png';
+
+app.post('/api/demo/lip-sync-video', async (req, res) => {
+  const elevenKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_LABS_API_KEY;
+  if (!elevenKey) {
+    return res.status(503).json({ error: 'ELEVENLABS_API_KEY not configured' });
+  }
+  if (!REPLICATE_TOKEN) {
+    return res.status(503).json({ error: 'REPLICATE_API_TOKEN not configured' });
+  }
+  const { text, image } = req.body;
+  const inputText = (text || '').slice(0, 1500);
+  if (!inputText) return res.status(400).json({ error: 'Missing text' });
+
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
+  const fs = require('fs');
+
+  try {
+    // 1. TTS via ElevenLabs
+    const ttsRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': elevenKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: inputText,
+        model_id: 'eleven_multilingual_v2',
+      }),
+    });
+    if (!ttsRes.ok) {
+      const err = await ttsRes.json().catch(() => ({}));
+      return res.status(ttsRes.status).json({ error: err.detail?.message || 'TTS failed' });
+    }
+    const audioBuf = Buffer.from(await ttsRes.arrayBuffer());
+    const tmpAudio = `/tmp/niptuck-tts-${Date.now()}.mp3`;
+    fs.writeFileSync(tmpAudio, audioBuf);
+
+    // 2. Source image – user upload or default
+    let sourceImage = image;
+    if (!sourceImage) sourceImage = DEFAULT_AVATAR_IMAGE;
+    else if (sourceImage.startsWith('data:')) {
+      const base64 = sourceImage.replace(/^data:image\/\w+;base64,/, '');
+      const tmpImg = `/tmp/niptuck-face-${Date.now()}.png`;
+      fs.writeFileSync(tmpImg, Buffer.from(base64, 'base64'));
+      sourceImage = tmpImg;
+    }
+
+    // 3. SadTalker via Replicate
+    const Replicate = require('replicate').default;
+    const replicate = new Replicate({ auth: REPLICATE_TOKEN });
+    const output = await replicate.run('cjwbw/sadtalker:a519cc0cfebaaeade068b23899165a11ec76aaa1d2b313d40d214f204ec957a3', {
+      input: {
+        source_image: sourceImage,
+        driven_audio: tmpAudio,
+        use_enhancer: false,
+      },
+    });
+
+    try { fs.unlinkSync(tmpAudio); } catch (_) {}
+    if (sourceImage && sourceImage.startsWith('/tmp/')) {
+      try { fs.unlinkSync(sourceImage); } catch (_) {}
+    }
+
+    const videoUrl = typeof output === 'string' ? output
+      : (typeof output?.url === 'function' ? output.url() : output?.url)
+      || (Array.isArray(output) ? output[0] : null);
+    if (!videoUrl) return res.status(500).json({ error: 'SadTalker produced no video' });
+
+    const ttsCost = credits.computeCost('elevenlabs', 'default', { chars: inputText.length });
+    const sadTalkerCost = credits.computeCost('replicate', 'cjwbw/sadtalker', {});
+    const totalCost = ttsCost + sadTalkerCost;
+    const charge = credits.chargeAndLog(getTenantId(req), {
+      provider: 'replicate',
+      model: 'cjwbw/sadtalker',
+      route: '/api/demo/lip-sync-video',
+      cost_usd: totalCost,
+      metadata: { tts_cost: ttsCost, sadtalker_cost: sadTalkerCost, chars: inputText.length },
+    });
+    if (!charge.ok) return res.status(402).json({ error: charge.error, balance: charge.balance });
+    res.json({ video_url: videoUrl, _stars: { balance: charge.balance, charged: charge.stars_charged } });
+  } catch (err) {
+    console.error('Lip-sync error:', err.message);
+    res.status(500).json({ error: err.message || 'Lip-sync failed' });
+  }
+});
+
+// ElevenLabs TTS – assessment readout and chat replies
+app.post('/api/demo/speak', async (req, res) => {
+  const apiKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_LABS_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({ error: 'ELEVENLABS_API_KEY not configured' });
+  }
+  const { text } = req.body;
+  const input = (text || '').slice(0, 2500);
+  if (!input) return res.status(400).json({ error: 'Missing text' });
+
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'; // Rachel
+  const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`;
+
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: input,
+        model_id: 'eleven_multilingual_v2',
+      }),
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      return res.status(r.status).json({ error: err.detail?.message || r.statusText || 'TTS failed' });
+    }
+    const buf = await r.arrayBuffer();
+    const costUsd = credits.computeCost('elevenlabs', 'default', { chars: input.length });
+    const charge = credits.chargeAndLog(getTenantId(req), {
+      provider: 'elevenlabs',
+      model: 'eleven_multilingual_v2',
+      route: '/api/demo/speak',
+      cost_usd: costUsd,
+      metadata: { chars: input.length },
+    });
+    if (!charge.ok) return res.status(402).json({ error: charge.error, balance: charge.balance });
+    res.set('Content-Type', 'audio/mpeg');
+    res.set('X-Stars-Balance', String(charge.balance));
+    res.set('X-Stars-Charged', String(charge.stars_charged));
+    res.send(Buffer.from(buf));
+  } catch (err) {
+    console.error('ElevenLabs speak error:', err.message);
+    res.status(500).json({ error: err.message || 'TTS failed' });
+  }
+});
+
 // Whisper transcription
 app.post('/api/demo/transcribe', async (req, res) => {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -432,7 +709,18 @@ app.post('/api/demo/transcribe', async (req, res) => {
       file: fs.createReadStream(tmp),
       model: 'whisper-1',
     });
-    res.json({ text: transcript.text });
+    const costUsd = credits.computeCost('openai', 'whisper-1', {
+      duration_seconds: Math.max(1, buf.length / 50000), // ~50KB per sec rough
+    });
+    const charge = credits.chargeAndLog(getTenantId(req), {
+      provider: 'openai',
+      model: 'whisper-1',
+      route: '/api/demo/transcribe',
+      cost_usd: costUsd,
+      metadata: { audio_bytes: buf.length },
+    });
+    if (!charge.ok) return res.status(402).json({ error: charge.error, balance: charge.balance });
+    res.json({ text: transcript.text, _stars: { balance: charge.balance, charged: charge.stars_charged } });
   } catch (err) {
     console.error('Transcribe error:', err.message);
     res.status(500).json({ error: err.message });
@@ -490,6 +778,20 @@ Reply JSON only: {"scenarioId":"beach"|null,"templateId":"gentle-sway"|null,"cus
     let raw = completion.choices[0]?.message?.content?.trim() || '{}';
     raw = raw.replace(/```json?\n?/g, '').replace(/```\n?/g, '').trim();
     const parsed = JSON.parse(raw);
+    const usage = completion.usage || {};
+    const costUsd = credits.computeCost('openai', 'gpt-4o-mini', {
+      input_tokens: usage.prompt_tokens,
+      output_tokens: usage.completion_tokens,
+    });
+    const charge = credits.chargeAndLog(getTenantId(req), {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      route: '/api/demo/voice-generate',
+      cost_usd: costUsd,
+      tokens_in: usage.prompt_tokens,
+      tokens_out: usage.completion_tokens,
+    });
+    if (!charge.ok) return res.status(402).json({ error: charge.error, balance: charge.balance });
     res.json({
       action: 'generate',
       scenarioId: parsed.scenarioId || null,
@@ -498,6 +800,7 @@ Reply JSON only: {"scenarioId":"beach"|null,"templateId":"gentle-sway"|null,"cus
       celebrity: parsed.celebrity || null,
       type: parsed.type || 'image',
       originalText: inputText,
+      _stars: { balance: charge.balance, charged: charge.stars_charged },
     });
   } catch (err) {
     console.error('Voice-generate parse error:', err.message);
