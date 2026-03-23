@@ -23,12 +23,28 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
-  res.json({ niptuckApiUrl: process.env.NIPTUCK_API_URL || '' });
+  res.json({
+    niptuckApiUrl: process.env.NIPTUCK_API_URL || '',
+    keys: {
+      openai: !!process.env.OPENAI_API_KEY,
+      gemini: !!process.env.GEMINI_API_KEY,
+      heygen: !!process.env.HEYGEN_API_KEY,
+      fal: !!process.env.FAL_AI_KEY,
+      replicate: !!(process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_API),
+    },
+    docPrompt: process.env.DEMO_DOC_PROMPT || 'Blunt cosmetic consultant with comedian wit. Delivers assessment as Doc X.',
+    patientPrompt: process.env.DEMO_PATIENT_PROMPT || 'Patient sees themselves in scenarios – beach, gym, red carpet, boudoir.',
+    heygenAvatarId: process.env.HEYGEN_AVATAR_ID || 'Josh',
+  });
 });
 
 // Scenario library – sports, casual, family, etc.
 const scenarios = require('./scenarios');
 const motionTemplates = require('./motion-templates');
+
+// In-memory inbox for generated images/videos (survives until server restart)
+const inboxStore = [];
+const INBOX_MAX = 100;
 
 app.get('/api/demo/scenarios', (req, res) => {
   const { category } = req.query;
@@ -44,6 +60,29 @@ app.get('/api/demo/motion-templates', (req, res) => {
 
 app.get('/api/licenses/validate', (req, res) => {
   res.status(501).json({ error: 'License validation not implemented yet' });
+});
+
+// Generated content inbox – images and videos from pipeline
+app.get('/api/demo/inbox', (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, INBOX_MAX);
+  const items = inboxStore.slice(0, limit);
+  res.json({ items, total: inboxStore.length });
+});
+
+app.post('/api/demo/inbox', (req, res) => {
+  const { type, url, thumbnail, label } = req.body;
+  if (!type || !url) return res.status(400).json({ error: 'type and url required' });
+  const item = {
+    id: `inbox_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    type: type === 'video' ? 'video' : 'image',
+    url,
+    thumbnail: thumbnail || url,
+    label: label || (type === 'video' ? 'Generated video' : 'Generated image'),
+    createdAt: new Date().toISOString(),
+  };
+  inboxStore.unshift(item);
+  if (inboxStore.length > INBOX_MAX) inboxStore.pop();
+  res.json({ ok: true, item });
 });
 
 // -----------------------------------------------------------------------------
@@ -97,8 +136,8 @@ app.post('/api/demo/analyze', async (req, res) => {
   const prompt = `You are a blunt, ruthless cosmetic consultant with a comedian's wit. Analyze this image.
 
 RULES:
-- If NO person visible (waist up or full body, face clear): Reply ONLY "PERSON_NOT_DETECTED" and why.
-- If YES: Respond in this EXACT format (each on its own line):
+- ONLY use "PERSON_NOT_DETECTED" when the image clearly has NO human (e.g. landscape, object, empty scene, or face completely obscured). If any face or person is visible (even partially, close-up, or from an angle), proceed with analysis.
+- When a person IS visible: Respond in this EXACT format (each on its own line):
 
 ATTRACTIVENESS: [1-10]/10
 ATTRACTIVENESS_NOTE: [one brief sentence about their looks]
@@ -261,6 +300,20 @@ app.get('/api/demo/heygen-video/:id', async (req, res) => {
     status: data.status || 'unknown',
     video_url: data.video_url || null,
   });
+});
+
+// HeyGen avatars list – for homepage/experience display
+app.get('/api/heygen/avatars', async (req, res) => {
+  const result = await heygenRequest('/v2/avatars');
+  if (!result || result.error) {
+    return res.json({ avatars: [], error: result?.error || 'HeyGen not configured' });
+  }
+  const avatars = (result.data?.avatars || []).slice(0, 12).map(a => ({
+    id: a.avatar_id,
+    name: a.avatar_name,
+    preview: a.preview_image_url || a.preview_video_url,
+  }));
+  res.json({ avatars });
 });
 
 // HeyGen Streaming – interactive avatar session (Cyber Worker)

@@ -206,7 +206,7 @@
 </head>
 <body>
   <h1>NipTuck Demo</h1>
-  <p class="sub">Cosmetic scan · <a href="/lab-intro.html">Lab intro</a> · <a href="/stream-panel.html" target="_blank">Stream Panel</a> · <a href="/tutorial.html">Tutorial</a> · <a href="/demo-experience.html">Doc & Patient views</a> · <a href="/demo-mib.html">Big screen</a> · <a href="/guide.html">Setup</a> · <a href="/admin.html">Admin</a></p>
+  <p class="sub">Cosmetic scan · <a href="/lab-intro.html">Lab intro</a> · <a href="/stream-panel.html" target="_blank">Stream Panel</a> · <a href="/inbox.html">📬 My Creations</a> · <a href="/demo-experience.html">Doc & Patient views</a> · <a href="/demo-mib.html">Big screen</a> · <a href="/guide.html">Setup</a> · <a href="/admin.html">Admin</a></p>
 
   <div class="vb-row" style="margin-bottom:0.5rem;">
     <span style="font-size:0.8rem;color:#6aa;margin-right:0.5rem;">Virtual background:</span>
@@ -506,6 +506,13 @@
         });
       });
     }
+    function reportToInbox(type, url, label) {
+      fetch('/api/demo/inbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: type === 'video' ? 'video' : 'image', url, label }),
+      }).catch(() => {});
+    }
     async function runScenarioGen(scenarioId, customPrompt, type) {
       document.getElementById('scenariosWrap')?.classList.add('loading');
       setStatus(type === 'video' ? 'Generating video… (up to 2 min)' : 'Generating image…', 'loading');
@@ -524,7 +531,8 @@
           vidEl.style.display = 'block';
           vidEl.src = data.video_url;
           document.getElementById('scenarioResult').style.display = 'block';
-          setStatus('Video ready.', 'success');
+          reportToInbox('video', data.video_url, 'Scenario video');
+          setStatus('Video ready. Added to My Creations.', 'success');
         } else {
           const r = await fetch('/api/demo/scenario-image', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -538,7 +546,8 @@
           imgEl.style.display = 'block';
           imgEl.src = data.image;
           document.getElementById('scenarioResult').style.display = 'block';
-          setStatus('Image ready.', 'success');
+          reportToInbox('image', data.image, 'Scenario image');
+          setStatus('Image ready. Added to My Creations.', 'success');
         }
       } catch (e) {
         setStatus('Error: ' + e.message, 'error');
@@ -904,7 +913,8 @@
           if (s.video_url) {
             docXVideo.src = s.video_url;
             docXVideo.classList.add('show');
-            setStatus('Doc X video ready.', 'success');
+            reportToInbox('video', s.video_url, 'Doc X avatar video');
+            setStatus('Doc X video ready. Added to My Creations.', 'success');
           } else if (s.status === 'failed') {
             setStatus('Video generation failed.', 'error');
           } else {

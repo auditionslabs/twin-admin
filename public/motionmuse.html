@@ -152,7 +152,7 @@
 </head>
 <body>
   <h1>MotionMuse</h1>
-  <p class="sub">Upload one image → Pick a motion template → Generate video. <a href="/demo.html">NipTuck Demo</a> · <a href="/guide.html">Setup</a></p>
+  <p class="sub">Upload one image → Pick a motion template → Generate video. <a href="/demo.html">NipTuck Demo</a> · <a href="/inbox.html">📬 My Creations</a> · <a href="/guide.html">Setup</a></p>
 
   <div class="flow">
     <div class="panel">
@@ -167,6 +167,7 @@
     <div class="panel">
       <h3>2. Pick a motion template</h3>
       <div id="templatesGrid" class="templates-grid"></div>
+      <p style="font-size:0.8rem;color:#666;margin:0.5rem 0 0;">Pick a template above to enable Generate</p>
       <div class="prompt-row">
         <label>Optional prompt (override template)</label>
         <input type="text" id="customPrompt" placeholder="e.g. The person waves slowly, cinematic" maxlength="400">
@@ -180,9 +181,17 @@
     <div id="noPreview" class="no-preview" style="display:none">Add your image and Generate to see your result</div>
   </div>
 
+  <div class="pipeline" style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+    <span id="step1" style="opacity:0.5;">1. Upload ✓</span>
+    <span>→</span>
+    <span id="step2" style="opacity:0.5;">2. Pick template</span>
+    <span>→</span>
+    <span id="step3" style="opacity:0.5;">3. Generate</span>
+  </div>
   <div class="actions">
     <button class="btn btn-generate" id="generateBtn" disabled>Generate video</button>
     <button class="btn btn-download" id="downloadBtn" disabled style="display:none">Download video</button>
+    <a href="/inbox.html" class="btn btn-download" style="text-decoration:none;display:inline-flex;align-items:center;gap:0.35rem;">📬 My Creations</a>
   </div>
 
   <div id="status" class="status"></div>
@@ -233,6 +242,7 @@
               templatesGrid.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
               card.classList.add('active');
               selectedTemplateId = card.dataset.id;
+              document.getElementById('step2').style.opacity = '1';
               showTemplatePreview(selectedTemplateId);
               updateGenerateState();
             });
@@ -244,7 +254,7 @@
     }
 
     function updateGenerateState() {
-      generateBtn.disabled = !uploadedImage;
+      generateBtn.disabled = !uploadedImage || !selectedTemplateId;
     }
 
     function showTemplatePreview(templateId) {
@@ -271,6 +281,7 @@
       uploadedImage = dataUrl;
       uploadZone.classList.add('has-image');
       uploadPreview.innerHTML = `<img src="${dataUrl}" alt="Preview">`;
+      document.getElementById('step1').style.opacity = '1';
       updateGenerateState();
     }
 
@@ -299,10 +310,21 @@
       }
     });
 
+    function reportToInbox(type, url, label) {
+      fetch('/api/demo/inbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, url, label }),
+      }).catch(() => {});
+    }
+
     generateBtn.addEventListener('click', async () => {
-      if (!uploadedImage) return;
+      if (!uploadedImage || !selectedTemplateId) {
+        setStatus('Please upload an image and pick a motion template.', 'error');
+        return;
+      }
       generateBtn.disabled = true;
-      setStatus('Generating video… (up to ~3 min)', 'loading');
+      setStatus('Generating video… (up to ~3 min) – FAL.ai or Replicate', 'loading');
       resultWrap.classList.remove('show');
       downloadBtn.style.display = 'none';
       try {
@@ -322,12 +344,14 @@
           resultVideo.src = lastVideoUrl;
           resultWrap.classList.add('show');
           downloadBtn.style.display = 'inline-block';
-          setStatus('Video ready. Preview above or download.', 'success');
+          const tpl = templatesById[selectedTemplateId];
+          reportToInbox('video', lastVideoUrl, tpl ? `${tpl.name} video` : 'MotionMuse video');
+          setStatus('Video ready. Added to My Creations.', 'success');
         } else {
           throw new Error('No video URL returned');
         }
       } catch (e) {
-        setStatus('Error: ' + e.message, 'error');
+        setStatus('Error: ' + e.message + ' (Check FAL_AI_KEY or REPLICATE_API_TOKEN)', 'error');
       }
       generateBtn.disabled = false;
     });
